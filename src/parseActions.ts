@@ -1,31 +1,78 @@
 import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
 import * as treeAdapter from "https://cdn.skypack.dev/parse5-htmlparser2-tree-adapter?dts";
 import walk from "./walk.ts";
-import * as acorn from "https://esm.sh/acorn";
 
-const parseActions = (id: string, ast: parse5.Node) => {
-  const actionHandlers: { [key: string]: acorn.Node } = {};
+const parseDirectives = (id: string, ast: parse5.Node) => {
+  const directives: {
+    [key: string]: {
+      id: string;
+      type: "on" | "bind" | "class";
+      name: string;
+      modifier: string;
+      value: string;
+    };
+  } = {};
 
   walk(ast, (node) => {
-    const onClickAttr = treeAdapter.getAttrList(node).find(({ name }) => name === "on:click");
+    const eventAttributes = treeAdapter
+      .getAttrList(node)
+      .filter(({ name }) => /^[^:]+:/.test(name));
 
-    if (!onClickAttr) {
-      return true;
-    }
+    eventAttributes.forEach(({ name, value }) => {
+      const key = id + Object.keys(directives).length;
 
-    const name = id + Object.keys(actionHandlers).length;
+      const matches = name.match(/^([^:]+):([^\.]+).?(.*)/);
+      const directiveType = matches?.at(1);
+      const directiveName = matches?.at(2);
+      const directiveModifier = matches?.at(3);
 
-    const handlerAst = acorn.parseExpressionAt(onClickAttr.value, 0, { ecmaVersion: 2022 });
-    actionHandlers[name] = handlerAst;
+      if (
+        directiveType !== "on" &&
+        directiveType !== "bind" &&
+        directiveType !== "class"
+      ) {
+        throw new Error(`Invalid directive "${directiveType}"`);
+      }
 
-    treeAdapter.adoptAttributes(node, [
-      { name: "type", value: "submit" },
-      { name: "name", value: "submit" },
-      { name: "value", value: name },
-    ]);
+      directives[key] = {
+        id: key,
+        type: directiveType,
+        name: directiveName || "",
+        modifier: directiveModifier || "",
+        value,
+      };
+
+      if (
+        directiveType === "on" &&
+        directiveName === "click" &&
+        treeAdapter.getTagName(node) === "button"
+      ) {
+        treeAdapter.adoptAttributes(node, [
+          {
+            name: "type",
+            value: "submit",
+          },
+          {
+            name: "name",
+            value: "submit",
+          },
+          {
+            name: "value",
+            value: key,
+          },
+        ]);
+      } else if (directiveType === "bind" && directiveName === "value") {
+        treeAdapter.adoptAttributes(node, [
+          {
+            name: "name",
+            value: key,
+          },
+        ]);
+      }
+    });
   });
 
-  return actionHandlers;
+  return directives;
 };
 
-export default parseActions;
+export default parseDirectives;

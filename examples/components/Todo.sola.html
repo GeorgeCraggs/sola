@@ -1,6 +1,11 @@
 <script>
   let todoInputName = "";
   let todos = [];
+
+  function addTodo() {
+    todos = [...todos, todoInputName];
+    todoInputName = "";
+  }
 </script>
 
 <h1 class="text-2xl">Todo List</h1>
@@ -10,11 +15,11 @@
     <input
       class="rounded border border-gray-800"
       type="text"
-      name="todoInputName"
+      bind:value="todoInputName"
     />
     <button
       class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
-      on:click="todos = [...todos, todoInputName]"
+      on:click="addTodo"
     >
       Add
     </button>

@@ -1,7 +1,7 @@
 import { Md5 } from "https://deno.land/std@0.116.0/hash/md5.ts";
 import parseSfc from "./parseSfc.ts";
 import { parseState, updateFormState, rewriteState } from "./state.ts";
-import parseActions from "./parseActions.ts";
+import parseDirectives from "./parseActions.ts";
 import parseBinds from "./parseBinds.ts";
 import build from "./builder.ts";
 import compileTemplate from "./compileTemplate.ts";
@@ -24,27 +24,20 @@ export default async function compileBackend(filePath: string) {
   let script = scripts[0];
 
   const { state, context } = parseState(script);
-  updateFormState(template, state);
   /** @ts-ignore */
-  script = rewriteState(script, state);
+  script = rewriteState(script, state, []);
 
-  const actions = Object.fromEntries(
-    Object.entries(parseActions(uuid, template)).map(
-      ([name, actionHandler]) => [
-        name,
-        rewriteState(actionHandler, state)
-      ]
-    )
-  );
+  const directives = parseDirectives(uuid, template);
 
+  updateFormState(template, state);
   parseBinds(template);
 
   const outputText = build(
-    compileTemplate(parse5.serialize(template, { treeAdapter }), state),
+    compileTemplate(parse5.serialize(template, { treeAdapter }), state, context),
     script,
     state,
     context,
-    actions,
+    directives,
     styles.join("\n")
   );
 

@@ -14,35 +14,16 @@ export type StateShape = {
 
 export const parseState = (ast: acorn.Node) => {
   const state: StateShape = {};
-  const context: acorn.Node = {
-    type: "ObjectExpression",
-    /** @ts-ignorer */
-    properties: [],
-  };
+  const context: string[] = [];
 
   walkJs(ast, {
     enter(node, parent) {
       // Check context
       if (node.type === "FunctionDeclaration" && parent.type === "Program") {
         /** @ts-ignore */
-        context.properties.push({
-          type: "Property",
-          /** @ts-ignore */
-          method: false,
-          shorthand: true,
-          computed: false,
-          key: {
-            type: "Identifier",
-            /** @ts-ignore */
-            name: node.id.name,
-          },
-          kind: "init",
-          value: {
-            type: "Identifier",
-            /** @ts-ignore */
-            name: node.id.name,
-          },
-        });
+        const name = node.id.name;
+
+        context.push(name);
       }
       // TODO: Add more
 
@@ -109,33 +90,24 @@ export const parseState = (ast: acorn.Node) => {
   return { state, context };
 };
 
-export const rewriteState = (ast: acorn.Node, stateShape: StateShape) => {
+export const rewriteState = (
+  ast: acorn.Node,
+  stateShape: StateShape,
+  context: string[]
+) => {
   const stateNames = Object.keys(stateShape);
 
   /** @ts-ignore */
   return walkJs(ast, {
     enter(node, parent) {
+      /** @ts-ignore */
+      const name = "name" in node ? node.name : null;
+
       if (
         node.type === "Identifier" &&
-        /*(parent === null ||
-          [
-            "ArrayExpression",
-            "ObjectExpression", // TODO: Will this work?...
-            "UnaryExpression",
-            "UpdateExpression",
-            "BinaryExpression",
-            "AssignmentExpression",
-            "LogicalExpression",
-            "ExpressionStatement",
-            "SpreadElement",
-            "MemberExpression",
-          ].indexOf(parent.type) !== -1) &&*/
-        /** @ts-ignore */
-        stateNames.indexOf(node.name) !== -1
+        (stateNames.indexOf(name) !== -1 || context.indexOf(name) !== -1)
       ) {
         this.skip();
-        /** @ts-ignore */
-        const name = node.name;
 
         this.replace({
           type: "MemberExpression",
@@ -147,7 +119,7 @@ export const rewriteState = (ast: acorn.Node, stateShape: StateShape) => {
             },
             property: {
               type: "Identifier",
-              name: "state",
+              name: stateNames.indexOf(name) !== -1 ? "state" : "context",
             },
             computed: false,
             optional: false,
@@ -166,7 +138,6 @@ export const rewriteState = (ast: acorn.Node, stateShape: StateShape) => {
 
 export const updateFormState = (ast: parse5.Node, stateShape: StateShape) => {
   walkHtml(ast, (node) => {
-    console.log(node);
     if (treeAdapter.getTagName(node) === "form") {
       treeAdapter.adoptAttributes(node, [{ name: "method", value: "post" }]);
 

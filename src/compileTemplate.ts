@@ -106,7 +106,8 @@ const alternatePlain = (tree: TreeToken[]) => {
 
 const convertToAst = (
   tree: TreeToken[],
-  stateShape: StateShape
+  stateShape: StateShape,
+  context: string[]
 ): acorn.Node => {
   const expressionTokens = tree.filter((t) => t.type !== "plain");
   const plainTokens = tree.filter((t) => t.type === "plain");
@@ -118,14 +119,9 @@ const convertToAst = (
       let contentAst = acorn.parseExpressionAt(t.content, 0, {
         ecmaVersion: 2022,
       });
-      if (contentAst.type === "Identifier") {
-        console.log(contentAst);
-      }
+
       /** @ts-ignore */
-      contentAst = rewriteState(contentAst, stateShape);
-      if (contentAst.type === "Identifier") {
-        console.log("AFTER ", contentAst);
-      }
+      contentAst = rewriteState(contentAst, stateShape, context);
 
       switch (t.type) {
         case "script":
@@ -142,7 +138,7 @@ const convertToAst = (
           return {
             type: "ConditionalExpression",
             test: contentAst,
-            consequent: convertToAst(t.children, stateShape),
+            consequent: convertToAst(t.children, stateShape, context),
             alternate: {
               type: "Literal",
               value: "",
@@ -165,7 +161,8 @@ const convertToAst = (
 
 const compileTemplate = (
   template: string,
-  stateShape: StateShape
+  stateShape: StateShape,
+  context: string[]
 ): acorn.Node => {
   let depth = 0;
 
@@ -227,7 +224,7 @@ const compileTemplate = (
   const tokenTree = tokensToTree(tokens);
   alternatePlain(tokenTree);
 
-  return convertToAst(tokenTree, stateShape);
+  return convertToAst(tokenTree, stateShape, context);
 };
 
 export default compileTemplate;
