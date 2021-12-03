@@ -7,7 +7,7 @@ all: $(BUILD_FILES)
 
 $(BUILD_FILES): $(COMPONENT_FILES)
 	@mkdir -p build/
-	deno run --allow-read=components/ --allow-write=build/ ../compile.ts $?
+	deno run --allow-read --allow-write=build/ ../compile.ts $?
 
 clean:
 	rm -rf build/*

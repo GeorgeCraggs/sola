@@ -3,7 +3,7 @@
   let todos = [];
 </script>
 
-<h1 class="text-2xl">Todo App</h1>
+<h1 class="text-2xl">Todo List</h1>
 <p>You have {todos.length} todos</p>
 <form>
   <div class="flex gap-2">
@@ -18,15 +18,15 @@
     >
       Add
     </button>
-    <ol>
-      {todos}
-    </ol>
   </div>
-    <button
-      class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
-      on:click="todos = [...todos, 'hello world']"
-    >
-      Add Fixed
-    </button>
+  <button
+    class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
+    on:click="todos = [...todos, 'hello world']"
+  >
+    Add Fixed
+  </button>
 </form>
 
+<ol>
+  {todos}
+</ol>
