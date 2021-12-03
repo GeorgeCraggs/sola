@@ -1,8 +1,7 @@
 import { Md5 } from "https://deno.land/std@0.116.0/hash/md5.ts";
 import parseSfc from "./parseSfc.ts";
 import { parseState, updateFormState, rewriteState } from "./state.ts";
-import parseDirectives from "./parseActions.ts";
-import parseBinds from "./parseBinds.ts";
+import parseDirectives from "./parseDirectives.ts";
 import build from "./builder.ts";
 import compileTemplate from "./compileTemplate.ts";
 import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
@@ -27,10 +26,9 @@ export default async function compileBackend(filePath: string) {
   /** @ts-ignore */
   script = rewriteState(script, state, []);
 
-  const directives = parseDirectives(uuid, template);
-
   updateFormState(template, state);
-  parseBinds(template);
+
+  const directives = parseDirectives(uuid, template);
 
   const outputText = build(
     compileTemplate(parse5.serialize(template, { treeAdapter }), state, context),

@@ -61,11 +61,20 @@ const parseDirectives = (id: string, ast: parse5.Node) => {
             value: key,
           },
         ]);
-      } else if (directiveType === "bind" && directiveName === "value") {
+      } else if (directiveType === "bind" && directiveName) {
+        if (directiveName === "value") {
+          treeAdapter.adoptAttributes(node, [
+            {
+              name: "name",
+              value: key,
+            },
+          ]);
+        }
+
         treeAdapter.adoptAttributes(node, [
           {
-            name: "name",
-            value: key,
+            name: directiveName,
+            value: `{${value}}`,
           },
         ]);
       }
