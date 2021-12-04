@@ -21,6 +21,7 @@ type IfTreeToken = {
 type EachTreeToken = {
   type: "each";
   content: string;
+  params: string;
   children: TreeToken[];
 };
 
@@ -57,19 +58,30 @@ const tokensToTree = (tokens: Token[]) => {
         content: unescapeHtml(t.content),
       });
     } else if (t.type === "block") {
-      const splitContent = t.content.split(/ (.+)/);
-      if (splitContent[0] !== "if" && splitContent[0] !== "each") {
+      const [tagType, tagBody] = t.content.split(/ (.+)/);
+      if (tagType !== "if" && tagType !== "each") {
         throw new Error(
-          "Unable to compile template: Invalid tag type '" +
-            splitContent[0] +
-            '"'
+          "Unable to compile template: Invalid tag type '" + tagType + '"'
         );
       }
-      const newToken: EachTreeToken | IfTreeToken = {
-        type: splitContent[0],
-        content: unescapeHtml(splitContent[1]),
+
+      let newToken: EachTreeToken | IfTreeToken = {
+        type: "if",
+        content: unescapeHtml(tagBody),
         children: [],
       };
+
+      if (tagType === "each") {
+        const [content, params] = unescapeHtml(tagBody).split(" as ");
+
+        newToken = {
+          type: "each",
+          content: content,
+          params: params,
+          children: [],
+        };
+      }
+
       addTreeToken(newToken);
       currentDepth.push(newToken);
     } else if (t.type === "endblock") {
@@ -145,8 +157,57 @@ const convertToAst = (
               raw: `""`,
             },
           };
-        case "each":
-          return {};
+        case "each": {
+          const params = acorn.parseExpressionAt(t.params, 0, {
+            ecmaVersion: 2022,
+          });
+          return {
+            type: "CallExpression",
+            callee: {
+              type: "MemberExpression",
+              object: {
+                type: "CallExpression",
+                callee: {
+                  type: "MemberExpression",
+                  object: contentAst,
+                  property: {
+                    type: "Identifier",
+                    name: "map",
+                  },
+                  computed: false,
+                  optional: false,
+                },
+                arguments: [
+                  {
+                    type: "ArrowFunctionExpression",
+                    id: null,
+                    expression: true,
+                    generator: false,
+                    async: false,
+                    params:
+                      params.type === "SequenceExpression"
+                        ? /** @ts-ignore */
+                          params.expressions
+                        : [params],
+                    body: convertToAst(t.children, stateShape, context),
+                  },
+                ],
+              },
+              property: {
+                type: "Identifier",
+                name: "join",
+              },
+            },
+            arguments: [
+              {
+                type: "Literal",
+                value: "",
+                raw: `""`,
+              },
+            ],
+            optional: false,
+          };
+        }
       }
     }),
     quasis: plainTokens.map((t, index) => ({
