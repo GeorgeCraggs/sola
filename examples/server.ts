@@ -3,6 +3,7 @@ import * as Home from "./build/Home.js";
 import * as Error404 from "./build/Error404.js";
 import * as Counter from "./build/Counter.js";
 import * as Todo from "./build/Todo.js";
+import * as AdvancedTodo from "./build/AdvancedTodo.js";
 
 console.log("http://localhost:8005/");
 
@@ -24,6 +25,10 @@ const routes: {
   {
     match: "/todo",
     component: Todo,
+  },
+  {
+    match: "/advanced-todo",
+    component: AdvancedTodo,
   },
 ];
 

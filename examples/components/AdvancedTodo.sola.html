@@ -1,0 +1,95 @@
+<script>
+  let todoInputName = "";
+  let todos = [];
+
+  function addTodo() {
+    todos = [
+      ...todos,
+      {
+        name: todoInputName,
+        complete: false,
+        tags: ["untagged"],
+        assignee: null,
+      },
+    ];
+    todoInputName = "";
+  }
+
+  const tags = [...new Set(todos.map((t) => t.tags).flat(1))];
+  const colourClasses = [
+    ["bg-red-400", "hover:bg-red-500"],
+    ["bg-green-400", "hover:bg-green-500"],
+    ["bg-blue-400", "hover:bg-blue-500"],
+  ];
+</script>
+
+<style>
+.aspect {
+  aspect-ratio: 1 / 1;
+}
+</style>
+
+<form class="grid gap-6">
+  <div class="flex justify-between">
+    <h1 class="text-2xl">Todo's</h1>
+    <div class="flex gap-2">
+      <input
+        class="rounded border border-gray-800 px-3"
+        type="text"
+        bind:value="todoInputName"
+        placeholder="Enter a todo"
+      />
+      <button
+        class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
+        on:click="addTodo"
+      >
+        Add
+      </button>
+    </div>
+  </div>
+
+  <div class="flex gap-2">
+    <button
+      class="bg-gray-300 hover:bg-gray-400 py-2 px-4 rounded"
+    >
+      None
+    </button>
+    {#each tags as tag, index}
+    <button
+      class="{colourClasses[index % colourClasses.length].join(' ')} py-2 px-4 rounded"
+    >
+      {tag}
+    </button>
+    {/each}
+  </div>
+
+  <ol class="grid gap-4">
+    {#each todos as todo}
+    <li class="flex gap-4 p-3 border rounded items-center">
+      <button
+        class="border-2 border-gray-500 rounded w-5 h-5"
+        on:click="console.log('TODO: Directives in #each context')"
+      >
+        <span class="sr-only">{todo.complete ? 'Complete' : 'Incomplete'}</span>
+      </button>
+      {todo.name}
+      <ul class="ml-auto">
+        {#each todo["tags"] as tag}
+        <li class="py-1 px-2 bg-red-300 rounded">{tag}</li>
+        {/each}
+      </ul>
+      {#if todo.assignee !== null}
+        {todo.assignee}
+      {/if}
+      {#if todo.assignee === null}
+        <div class="flex gap-2 items-center">
+          <div class="h-8 aspect rounded-full bg-gray-500">
+
+          </div>
+          Unassigned
+        </div>
+      {/if}
+    </li>
+    {/each}
+  </ol>
+</form>
