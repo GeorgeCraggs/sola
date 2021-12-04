@@ -12,6 +12,61 @@ export type StateShape = {
   };
 };
 
+type ArrayPattern = {
+  type: "ArrayPattern";
+  elements: Declaration[];
+};
+
+type ObjectProperty = {
+  type: "Property";
+  method: boolean;
+  shorthand: boolean;
+  computed: boolean;
+  key: Declaration;
+};
+
+type ObjectPattern = {
+  type: "ObjectPattern";
+  properties: ObjectProperty[];
+};
+
+type VariableDeclarator = {
+  type: "VariableDeclarator";
+  id: Identifier,
+};
+
+type Identifier = {
+  type: "Identifier";
+  name: string;
+};
+
+type Declaration = ArrayPattern | ObjectPattern | Identifier;
+
+const getDeclarationNames = (declarations: (VariableDeclarator | Declaration)[]) => {
+  const names: string[] = [];
+
+  declarations.forEach((declaration) => {
+    switch (declaration.type) {
+      case "VariableDeclarator":
+        names.push(...getDeclarationNames([declaration.id]));
+        break;
+      case "Identifier":
+        names.push(declaration.name);
+        break;
+      case "ObjectPattern":
+        declaration.properties.forEach((property) => {
+          names.push(...getDeclarationNames([property.key]))
+        });
+        break;
+      case "ArrayPattern":
+        names.push(...getDeclarationNames(declaration.elements));
+        break;
+    }
+  });
+
+  return names;
+};
+
 export const parseState = (ast: acorn.Node) => {
   const state: StateShape = {};
   const context: string[] = [];
@@ -24,6 +79,10 @@ export const parseState = (ast: acorn.Node) => {
         const name = node.id.name;
 
         context.push(name);
+        /** @ts-ignore */
+      } else if (node.type === "VariableDeclaration" && node.kind === "const") {
+        /** @ts-ignore */
+        context.push(...getDeclarationNames(node.declarations));
       }
       // TODO: Add more
 
