@@ -34,7 +34,7 @@ const _runner = function (_action) {
     \`CODE\`
 
     return \`CONTEXTS\`;
-  })();
+  }).call(this);
 
   const _context = {...this, context: extra};
 
