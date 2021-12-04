@@ -3,7 +3,7 @@ import parseSfc from "./parseSfc.ts";
 import { parseState, updateFormState, rewriteState } from "./state.ts";
 import parseDirectives from "./parseDirectives.ts";
 import build from "./builder.ts";
-import compileTemplate from "./compileTemplate.ts";
+import compileTemplate from "./templateCompiler/mod.ts";
 import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
 import * as treeAdapter from "https://cdn.skypack.dev/parse5-htmlparser2-tree-adapter?dts";
 
