@@ -84,7 +84,7 @@ export const Component = async function (req) {
   return _runner.call({state}, action);
 };
 
-export const Styles = "${styles}";
+export const Styles = \`${styles}\`;
   `.trim();
 
   const outputAst = parse(outputTemplate, {
