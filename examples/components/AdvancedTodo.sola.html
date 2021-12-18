@@ -23,14 +23,8 @@
   ];
 </script>
 
-<style>
-.aspect {
-  aspect-ratio: 1 / 1;
-}
-</style>
-
 <form class="grid gap-6">
-  <div class="flex justify-between">
+  <div class="flex items-center justify-between">
     <h1 class="text-2xl">Todo's</h1>
     <div class="flex gap-2">
       <input
@@ -48,19 +42,26 @@
     </div>
   </div>
 
-  <div class="flex gap-2">
-    <button
-      class="bg-gray-300 hover:bg-gray-400 py-2 px-4 rounded"
-    >
-      None
-    </button>
-    {#each tags as tag, index}
-    <button
-      class="{colourClasses[index % colourClasses.length].join(' ')} py-2 px-4 rounded"
-    >
-      {tag}
-    </button>
-    {/each}
+  <div class="flex items-center gap-4">
+    <span id="tagFilterList">Filter by tag: </span>
+    <ul aria-labelledby="tagFilterList" class="flex gap-2">
+      <li class="contents">
+        <button
+          class="bg-gray-300 hover:bg-gray-400 py-2 px-4 rounded"
+        >
+          None
+        </button>
+      </li>
+      {#each tags as tag, index}
+      <li class="contents">
+        <button
+          class={colourClasses[index % colourClasses.length].join(' ') + " py-2 px-4 rounded"}
+        >
+          {tag}
+        </button>
+      </li>
+      {/each}
+    </ul>
   </div>
 
   <ol class="grid gap-4">
@@ -93,3 +94,9 @@
     {/each}
   </ol>
 </form>
+
+<style>
+.aspect {
+  aspect-ratio: 1 / 1;
+}
+</style>
