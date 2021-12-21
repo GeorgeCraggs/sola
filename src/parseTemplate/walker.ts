@@ -14,7 +14,10 @@ const walker = (
   ) => void
 ) => {
   for (const node of ast) {
-    callback.call({}, node, []);
+    callback.call({
+      replace: (node: TemplateNode) => {},
+      skip: () => {},
+    }, node, []);
   }
 };
 
