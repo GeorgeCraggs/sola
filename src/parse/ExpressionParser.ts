@@ -4,11 +4,10 @@ import {
   ScriptExpression,
   IfBlock,
   EachBlock,
-  TemplateNode,
 } from "./mod.ts";
 import GeneralParser from "./GeneralParser.ts";
 import { parseExpression } from "../acorn.ts";
-import { validateEachParams } from "../compile/estreeHelper.ts";
+import { validateEachParams } from "../ast/estree.ts";
 
 class ExpressionParser extends Parser {
   private depth = 0;

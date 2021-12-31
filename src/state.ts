@@ -2,7 +2,7 @@ import { acorn, estree } from "./acorn.ts";
 import { walk as walkJs } from "https://esm.sh/estree-walker";
 import { TemplateNode } from "./parse/mod.ts";
 import walkHtml from "./parse/walker.ts";
-import { generate } from "./compile/estreeHelper.ts";
+import { generate } from "./ast/estree.ts";
 
 type Values = string | number | bigint | boolean | RegExp | null | undefined;
 

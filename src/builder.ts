@@ -1,5 +1,5 @@
-import { acorn, estree } from "./acorn.ts";
-import { generate as b } from "./compile/estreeHelper.ts";
+import { acorn } from "./acorn.ts";
+import { estree, generate as b } from "./ast/estree.ts";
 import { walk } from "https://esm.sh/estree-walker";
 import { generate } from "https://deno.land/x/astring/src/astring.js";
 import { rewriteState, StateShape } from "./state.ts";

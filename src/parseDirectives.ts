@@ -1,6 +1,6 @@
 import { TemplateNode, ScriptExpression } from "./parse/mod.ts";
 import walk from "./parse/walker.ts";
-import { generate } from "./compile/estreeHelper.ts";
+import { generate } from "./ast/estree.ts";
 
 const parseDirectives = (id: string, ast: TemplateNode[]) => {
   const directives: {

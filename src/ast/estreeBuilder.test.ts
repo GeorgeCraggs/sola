@@ -16,11 +16,11 @@ Deno.test({
 });
 
 Deno.test({
-  name: "call function",
+  name: "call member function",
   fn: () => {
     const result = new Builder()
       .id("something")
-      .call("join", b.str(""))
+      .callMember("join", b.str(""))
       .build();
 
     const expected: estree.CallExpression = {
@@ -52,12 +52,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "call function on function",
+  name: "call member function on function",
   fn: () => {
     const result = new Builder()
       .id("something")
-      .call("map", b.arrow([b.id("x")], b.id("x")))
-      .call("join", b.str(""))
+      .callMember("map", b.arrow([b.id("x")], b.id("x")))
+      .callMember("join", b.str(""))
       .build();
 
     const expected: estree.CallExpression = {

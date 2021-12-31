@@ -1,4 +1,4 @@
-import { estree } from "../acorn.ts";
+import { estree } from "./estree.ts";
 
 const ident = (name: string): estree.Identifier => ({
   type: "Identifier",
