@@ -81,8 +81,7 @@
       </ul>
       {#if todo.assignee !== null}
         {todo.assignee}
-      {/if}
-      {#if todo.assignee === null}
+      {#else}
         <div class="flex gap-2 items-center">
           <div class="h-8 aspect rounded-full bg-gray-500">
 
