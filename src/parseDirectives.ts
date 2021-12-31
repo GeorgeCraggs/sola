@@ -1,30 +1,23 @@
-import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
-import * as treeAdapter from "https://cdn.skypack.dev/parse5-htmlparser2-tree-adapter?dts";
-import walk from "./walk.ts";
+import { TemplateNode, ScriptExpression } from "./parse/mod.ts";
+import walk from "./parse/walker.ts";
+import { generate } from "./compile/estreeHelper.ts";
 
-const parseDirectives = (id: string, ast: parse5.Node) => {
+const parseDirectives = (id: string, ast: TemplateNode[]) => {
   const directives: {
     [key: string]: {
       id: string;
       type: "on" | "bind" | "class";
       name: string;
       modifier: string;
-      value: string;
+      value: string | ScriptExpression;
     };
   } = {};
 
   walk(ast, (node) => {
-    const eventAttributes = treeAdapter
-      .getAttrList(node)
-      .filter(({ name }) => /^[^:]+:/.test(name));
+    if (node.type !== "HtmlTag") return;
 
-    eventAttributes.forEach(({ name, value }) => {
+    node.attributes.directives.forEach(({type: directiveType, property, modifier, body}) => {
       const key = id + Object.keys(directives).length;
-
-      const matches = name.match(/^([^:]+):([^\.]+).?(.*)/);
-      const directiveType = matches?.at(1);
-      const directiveName = matches?.at(2);
-      const directiveModifier = matches?.at(3);
 
       if (
         directiveType !== "on" &&
@@ -37,46 +30,50 @@ const parseDirectives = (id: string, ast: parse5.Node) => {
       directives[key] = {
         id: key,
         type: directiveType,
-        name: directiveName || "",
-        modifier: directiveModifier || "",
-        value,
+        name: property || "",
+        modifier: modifier || "",
+        value: body,
       };
 
       if (
         directiveType === "on" &&
-        directiveName === "click" &&
-        treeAdapter.getTagName(node) === "button"
+        property === "click" &&
+        node.tag === "button"
       ) {
-        treeAdapter.adoptAttributes(node, [
+        node.attributes.attributes.push(
           {
             name: "type",
-            value: "submit",
+            body: "submit",
           },
           {
             name: "name",
-            value: "submit",
+            body: "submit",
           },
           {
             name: "value",
-            value: key,
+            body: key,
           },
-        ]);
-      } else if (directiveType === "bind" && directiveName) {
-        if (directiveName === "value") {
-          treeAdapter.adoptAttributes(node, [
-            {
-              name: "name",
-              value: key,
-            },
-          ]);
+        );
+      } else if (directiveType === "bind" && property) {
+        if (property === "value") {
+          node.attributes.attributes.push({
+            name: "name",
+            body: key,
+          });
         }
 
-        treeAdapter.adoptAttributes(node, [
-          {
-            name: directiveName,
-            value: `{${value}}`,
-          },
-        ]);
+        if (typeof body === "string") {
+          node.attributes.attributes.push({
+            name: property,
+            body: {
+              type: "ScriptExpression",
+              expression: generate.id(body),
+              fileIdentifier: "",
+              startIndex: -1,
+              endIndex: -1,
+            },
+          });
+        }
       }
     });
   });

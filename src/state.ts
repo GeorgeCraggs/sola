@@ -1,65 +1,57 @@
-import * as acorn from "https://esm.sh/acorn";
+import { acorn, estree } from "./acorn.ts";
 import { walk as walkJs } from "https://esm.sh/estree-walker";
-import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
-import * as treeAdapter from "https://cdn.skypack.dev/parse5-htmlparser2-tree-adapter?dts";
-import walkHtml from "./walk.ts";
+import { TemplateNode } from "./parse/mod.ts";
+import walkHtml from "./parse/walker.ts";
+import { generate } from "./compile/estreeHelper.ts";
+
+type Values = string | number | bigint | boolean | RegExp | null | undefined;
 
 export type StateShape = {
   [key: string]: {
-    defaultValue: string | number | any[] | object;
-    ast: acorn.Node;
+    defaultValue:
+      | Values
+      | (estree.Expression | estree.Property | estree.SpreadElement | null)[];
+    ast: estree.Node;
     type: "string" | "number" | "array" | "object";
   };
 };
 
-type ArrayPattern = {
-  type: "ArrayPattern";
-  elements: Declaration[];
-};
-
-type ObjectProperty = {
-  type: "Property";
-  method: boolean;
-  shorthand: boolean;
-  computed: boolean;
-  key: Declaration;
-};
-
-type ObjectPattern = {
-  type: "ObjectPattern";
-  properties: ObjectProperty[];
-};
-
-type VariableDeclarator = {
-  type: "VariableDeclarator";
-  id: Identifier,
-};
-
-type Identifier = {
-  type: "Identifier";
-  name: string;
-};
-
-type Declaration = ArrayPattern | ObjectPattern | Identifier;
-
-const getDeclarationNames = (declarations: (VariableDeclarator | Declaration)[]) => {
+const getDeclarationNames = (
+  declarations: (estree.VariableDeclarator | estree.Pattern | null)[]
+) => {
   const names: string[] = [];
 
   declarations.forEach((declaration) => {
+    if (declaration === null) return;
+
     switch (declaration.type) {
-      case "VariableDeclarator":
-        names.push(...getDeclarationNames([declaration.id]));
-        break;
       case "Identifier":
         names.push(declaration.name);
         break;
       case "ObjectPattern":
         declaration.properties.forEach((property) => {
-          names.push(...getDeclarationNames([property.key]))
+          if (property.type === "RestElement") {
+            names.push(...getDeclarationNames([property]));
+          } else if (
+            property.key.type === "Identifier" ||
+            property.key.type === "MemberExpression"
+          ) {
+            names.push(...getDeclarationNames([property.key]));
+          }
         });
         break;
       case "ArrayPattern":
         names.push(...getDeclarationNames(declaration.elements));
+        break;
+      case "RestElement":
+        names.push(...getDeclarationNames([declaration.argument]));
+        break;
+      case "AssignmentPattern":
+        break;
+      case "MemberExpression":
+        break;
+      case "VariableDeclarator":
+        names.push(...getDeclarationNames([declaration.id]));
         break;
     }
   });
@@ -67,21 +59,23 @@ const getDeclarationNames = (declarations: (VariableDeclarator | Declaration)[])
   return names;
 };
 
-export const parseState = (ast: acorn.Node) => {
+export const parseState = (ast: estree.Node) => {
   const state: StateShape = {};
   const context: string[] = [];
 
   walkJs(ast, {
-    enter(node, parent) {
+    enter(_node, _parent) {
+      const parent = _parent as estree.Node;
+      const node = _node as estree.Node;
+
       // Check context
       if (node.type === "FunctionDeclaration" && parent.type === "Program") {
-        /** @ts-ignore */
-        const name = node.id.name;
+        const name = node.id?.name;
 
-        context.push(name);
-        /** @ts-ignore */
+        if (name) {
+          context.push(name);
+        }
       } else if (node.type === "VariableDeclaration" && node.kind === "const") {
-        /** @ts-ignore */
         context.push(...getDeclarationNames(node.declarations));
       }
       // TODO: Add more
@@ -89,10 +83,8 @@ export const parseState = (ast: acorn.Node) => {
       // Check state
       if (
         node.type === "VariableDeclaration" &&
-        /** @ts-ignore */
         node.kind === "let"
       ) {
-        /** @ts-ignore */
         node.declarations.forEach((declaration) => {
           if (declaration.id.type !== "Identifier") {
             console.error(
@@ -103,6 +95,7 @@ export const parseState = (ast: acorn.Node) => {
           }
 
           if (
+            typeof declaration.init === "undefined" ||
             declaration.init === null ||
             ["Literal", "ArrayExpression", "ObjectExpression"].indexOf(
               declaration.init.type
@@ -150,27 +143,24 @@ export const parseState = (ast: acorn.Node) => {
 };
 
 export const rewriteState = (
-  ast: acorn.Node,
+  ast: estree.Node,
   stateShape: StateShape,
   context: string[]
 ) => {
   const stateNames = Object.keys(stateShape);
 
-  /** @ts-ignore */
   return walkJs(ast, {
-    enter(node, parent) {
-      /** @ts-ignore */
-      const name = "name" in node ? node.name : null;
+    enter(_node, _) {
+      const node = _node as estree.Node;
 
       if (
         node.type === "Identifier" &&
-        (stateNames.indexOf(name) !== -1 || context.indexOf(name) !== -1)
+        (stateNames.indexOf(node.name) !== -1 || context.indexOf(node.name) !== -1)
       ) {
         this.skip();
 
-        this.replace({
+        const memberExpression: estree.MemberExpression = {
           type: "MemberExpression",
-          /** @ts-ignore */
           object: {
             type: "MemberExpression",
             object: {
@@ -178,48 +168,71 @@ export const rewriteState = (
             },
             property: {
               type: "Identifier",
-              name: stateNames.indexOf(name) !== -1 ? "state" : "context",
+              name: stateNames.indexOf(node.name) !== -1 ? "state" : "context",
             },
             computed: false,
             optional: false,
           },
           property: {
             type: "Identifier",
-            name,
+            name: node.name,
           },
           computed: false,
           optional: false,
-        });
+        }
+        this.replace(memberExpression);
       }
     },
-  });
+  }) as estree.Expression;
 };
 
-export const updateFormState = (ast: parse5.Node, stateShape: StateShape) => {
-  walkHtml(ast, (node) => {
-    if (treeAdapter.getTagName(node) === "form") {
-      treeAdapter.adoptAttributes(node, [{ name: "method", value: "post" }]);
-
-      Object.keys(stateShape).forEach((stateName) => {
-        treeAdapter.appendChild(
-          node,
-          treeAdapter.createElement("input", "", [
-            {
-              name: "type",
-              value: "hidden",
+export const updateFormState = (
+  ast: TemplateNode[],
+  stateShape: StateShape
+) => {
+  walkHtml(ast, function (node) {
+    if (node.type === "HtmlTag" && node.tag === "form") {
+      const methodAttr = node.attributes.attributes.find(
+        (a) => a.name === "method"
+      );
+      if (!methodAttr) {
+        node.attributes.attributes.push({ name: "method", body: "post" });
+        Object.keys(stateShape).forEach((stateName) => {
+          node.children.push({
+            type: "HtmlTag",
+            tag: "input",
+            attributes: {
+              type: "AttributeList",
+              attributes: [
+                {
+                  name: "type",
+                  body: "hidden",
+                },
+                {
+                  name: "name",
+                  body: stateName,
+                },
+                {
+                  name: "value",
+                  body: {
+                    type: "ScriptExpression",
+                    expression: generate.id(stateName),
+                    fileIdentifier: "",
+                    startIndex: -1,
+                    endIndex: -1,
+                  },
+                },
+              ],
+              directives: [],
             },
-            {
-              name: "name",
-              value: stateName,
-            },
-            {
-              name: "bind:value",
-              value: stateName,
-            },
-          ])
-        );
-      });
-      return true;
+            children: [],
+            fileIdentifier: "",
+            startIndex: -1,
+            endIndex: -1,
+          });
+        });
+        this.skip();
+      }
     }
   });
 };

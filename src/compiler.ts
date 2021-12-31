@@ -1,11 +1,9 @@
 import { Md5 } from "https://deno.land/std@0.116.0/hash/md5.ts";
-import parseSfc from "./parseSfc.ts";
 import { parseState, updateFormState, rewriteState } from "./state.ts";
 import parseDirectives from "./parseDirectives.ts";
 import build from "./builder.ts";
-import compileTemplate from "./templateCompiler/mod.ts";
-import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
-import * as treeAdapter from "https://cdn.skypack.dev/parse5-htmlparser2-tree-adapter?dts";
+import parse from "./parse/mod.ts";
+import compileTemplate from "./compile/mod.ts";
 
 export default async function compileBackend(filePath: string) {
   const outputFile = filePath
@@ -14,7 +12,7 @@ export default async function compileBackend(filePath: string) {
 
   const uuid = new Md5().update(outputFile).toString();
 
-  const { template, scripts, styles } = await parseSfc(filePath);
+  const { template, scripts, styles } = parse(filePath, await Deno.readTextFile(filePath));
 
   if (scripts.length > 1) {
     throw new Error(`${filePath}: Too many script tags`);
@@ -23,7 +21,6 @@ export default async function compileBackend(filePath: string) {
   let script = scripts[0];
 
   const { state, context } = parseState(script);
-  /** @ts-ignore */
   script = rewriteState(script, state, []);
 
   updateFormState(template, state);
@@ -31,7 +28,7 @@ export default async function compileBackend(filePath: string) {
   const directives = parseDirectives(uuid, template);
 
   const outputText = build(
-    compileTemplate(parse5.serialize(template, { treeAdapter }), state, context),
+    compileTemplate(template, state, context),
     script,
     state,
     context,

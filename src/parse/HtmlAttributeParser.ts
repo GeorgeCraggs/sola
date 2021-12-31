@@ -1,5 +1,6 @@
 import Parser from "./Parser.ts";
 import { AttributeList, ParseError, ScriptExpression } from "./mod.ts";
+import { parseExpression } from "../acorn.ts";
 
 class AttributeBodyParser extends Parser {
   private delimeter;
@@ -52,7 +53,7 @@ class AttributeBodyParser extends Parser {
       ? this.buffer
       : {
           type: "ScriptExpression",
-          expression: this.buffer,
+          expression: parseExpression(this.buffer),
           fileIdentifier: this.fileIdentifier,
           startIndex: this.startIndex === null ? -1 : this.startIndex,
           endIndex: (this.latestIndex || 0) - 1,

@@ -1,4 +1,6 @@
 import GeneralParser from "./GeneralParser.ts";
+import { acorn, estree } from "../acorn.ts";
+import walk from "./walker.ts";
 
 export class ParseErrorCollection extends Error {
   constructor(errors: ParseError[]) {
@@ -58,7 +60,7 @@ export type TextNode = {
 
 export type ScriptExpression = {
   type: "ScriptExpression";
-  expression: string;
+  expression: estree.Expression;
   fileIdentifier: string;
   startIndex: number;
   endIndex: number;
@@ -66,7 +68,7 @@ export type ScriptExpression = {
 
 export type IfBlock = {
   type: "IfBlock";
-  conditionExpression: string;
+  conditionExpression: estree.Expression;
   children: TemplateNode[];
   elseChildren: TemplateNode[];
   fileIdentifier: string;
@@ -76,8 +78,8 @@ export type IfBlock = {
 
 export type EachBlock = {
   type: "EachBlock";
-  iterator: string;
-  params: string;
+  iterator: estree.Expression;
+  params: estree.Pattern[];
   children: TemplateNode[];
   fileIdentifier: string;
   startIndex: number;
@@ -101,20 +103,20 @@ const indexToLineAndCol = (index: number, text: string) => {
     throw new Error("Index out of range");
   }
 
-  const lines = text.substr(0, index + 1).split("\n");
+  const lines = text.substring(0, index + 1).split("\n");
   const lineNumber = lines.length;
 
   return { line: lineNumber, column: lines[lineNumber - 1].length };
 };
 
-export default (fileIdentifier: string, template: string) => {
+export const parseTemplate = (fileIdentifier: string, template: string) => {
   const parser = new GeneralParser(fileIdentifier);
 
-    for (const [index, character] of template.split('').entries()) {
-      if (!parser.processChar(character, index)) {
-        break;
-      }
+  for (const [index, character] of template.split("").entries()) {
+    if (!parser.processChar(character, index)) {
+      break;
     }
+  }
 
   try {
     return parser.getNodes();
@@ -125,6 +127,35 @@ export default (fileIdentifier: string, template: string) => {
 
     const { line, column } = indexToLineAndCol(e.index, template);
 
-    throw new Error(`${e.file}:${line}:${column} ${e.message}`)
+    throw new Error(`${e.file}:${line}:${column} ${e.message}`);
   }
+};
+
+
+export default (fileIdentifier: string, fileContent: string) => {
+  const ast = parseTemplate(fileIdentifier, fileContent);
+
+  const styles: string[] = [];
+  const scripts: estree.Node[] = [];
+
+  walk(ast, function (node) {
+    if (node.type === "HtmlTag" && node.tag === "script") {
+      scripts.push(
+        acorn.parse(
+          (node.children[0] as TextNode).text,
+          { ecmaVersion: 2022 }
+        ) as estree.Node
+      );
+      this.replace(null);
+    }
+
+    if (node.type === "HtmlTag" && node.tag === "style") {
+      styles.push((node.children[0] as TextNode).text);
+      this.replace(null);
+    }
+
+    return true;
+  });
+
+  return { template: ast, scripts, styles };
 };

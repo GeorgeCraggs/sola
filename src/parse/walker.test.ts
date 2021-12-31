@@ -56,8 +56,14 @@ Deno.test({
 
     const firstNodeChild: EachBlock = {
       type: "EachBlock",
-      params: "",
-      iterator: "",
+      params: [{
+        type: "Identifier",
+        name: "value",
+      }],
+      iterator: {
+        type: "Identifier",
+        name: "something",
+      },
       children: [textNode],
       fileIdentifier: "",
       startIndex: -1,
@@ -120,8 +126,14 @@ Deno.test({
 
     const firstNodeChild: EachBlock = {
       type: "EachBlock",
-      params: "",
-      iterator: "",
+      params: [{
+        type: "Identifier",
+        name: "value",
+      }],
+      iterator: {
+        type: "Identifier",
+        name: "something",
+      },
       children: [textNode],
       fileIdentifier: "",
       startIndex: -1,
@@ -181,8 +193,14 @@ Deno.test({
 
     const firstNodeChild: EachBlock = {
       type: "EachBlock",
-      params: "",
-      iterator: "",
+      params: [{
+        type: "Identifier",
+        name: "value",
+      }],
+      iterator: {
+        type: "Identifier",
+        name: "something",
+      },
       children: [textNode],
       fileIdentifier: "",
       startIndex: -1,
@@ -250,8 +268,14 @@ Deno.test({
 
     const firstNodeChild: EachBlock = {
       type: "EachBlock",
-      params: "",
-      iterator: "",
+      params: [{
+        type: "Identifier",
+        name: "value",
+      }],
+      iterator: {
+        type: "Identifier",
+        name: "something",
+      },
       children: [textNode],
       fileIdentifier: "",
       startIndex: -1,
@@ -319,8 +343,14 @@ Deno.test({
 
     const firstNodeChild: EachBlock = {
       type: "EachBlock",
-      params: "",
-      iterator: "",
+      params: [{
+        type: "Identifier",
+        name: "value",
+      }],
+      iterator: {
+        type: "Identifier",
+        name: "something",
+      },
       children: [textNode],
       fileIdentifier: "",
       startIndex: -1,

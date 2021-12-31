@@ -1,6 +1,14 @@
 import Parser from "./Parser.ts";
-import { ParseError, ScriptExpression, IfBlock, EachBlock } from "./mod.ts";
+import {
+  ParseError,
+  ScriptExpression,
+  IfBlock,
+  EachBlock,
+  TemplateNode,
+} from "./mod.ts";
 import GeneralParser from "./GeneralParser.ts";
+import { parseExpression } from "../acorn.ts";
+import { validateEachParams } from "../compile/estreeHelper.ts";
 
 class ExpressionParser extends Parser {
   private depth = 0;
@@ -39,7 +47,10 @@ class ExpressionParser extends Parser {
         this.blockName = "if";
         this.block = {
           type: "IfBlock",
-          conditionExpression: "",
+          conditionExpression: {
+            type: "Identifier",
+            name: "",
+          },
           children: [],
           elseChildren: [],
           fileIdentifier: this.fileIdentifier,
@@ -53,8 +64,14 @@ class ExpressionParser extends Parser {
         this.blockName = "each";
         this.block = {
           type: "EachBlock",
-          iterator: "",
-          params: "",
+          iterator: {
+            type: "Identifier",
+            name: "",
+          },
+          params: [{
+            type: "Identifier",
+            name: "",
+          }],
           children: [],
           fileIdentifier: this.fileIdentifier,
           startIndex: this.startIndex === null ? -1 : this.startIndex,
@@ -67,11 +84,11 @@ class ExpressionParser extends Parser {
         this.parser = new GeneralParser(this.fileIdentifier);
 
         if (this.block.type === "IfBlock") {
-          this.block.conditionExpression = this.buffer.trim();
+          this.block.conditionExpression = parseExpression(this.buffer.trim());
         } else {
           const [iterator, params] = this.buffer.trim().split(" as ");
-          this.block.iterator = iterator;
-          this.block.params = params;
+          this.block.iterator = parseExpression(iterator);
+          this.block.params = validateEachParams(parseExpression(params));
         }
 
         this.buffer = "";
@@ -143,7 +160,7 @@ class ExpressionParser extends Parser {
       ? [
           {
             type: "ScriptExpression",
-            expression: this.buffer.trim(),
+            expression: parseExpression(this.buffer.trim()),
             fileIdentifier: this.fileIdentifier,
             startIndex: this.startIndex === null ? -1 : this.startIndex,
             endIndex: this.endIndex === null ? -1 : this.endIndex,

@@ -1,4 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
+import { parseExpression } from "../acorn.ts";
 import GeneralParser from "./GeneralParser.ts";
 
 const parse = (str: string) => {
@@ -48,7 +49,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "ScriptExpression",
-        expression: "expr",
+        expression: parseExpression("expr"),
         fileIdentifier: "filename",
         startIndex: 0,
         endIndex: 5,
@@ -104,7 +105,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "IfBlock",
-        conditionExpression: "condition",
+        conditionExpression: parseExpression("condition"),
         children: [
           {
             type: "HtmlTag",
@@ -136,3 +137,75 @@ Deno.test({
     ]);
   },
 });
+
+/*Deno.test({
+  name: "empty tag followed by string",
+  fn: () => {
+    const { results, parser } = parse(`<div class="a-class">
+
+      </div>
+      Something`);
+
+    assertEquals(parser.getNodes(), [
+      {
+        type: "HtmlTag",
+        tag: "div",
+        attributes: {
+          type: "AttributeList",
+          attributes: [],
+          directives: [],
+        },
+        children: [],
+        fileIdentifier: "filename",
+        startIndex: 15,
+        endIndex: 30,
+      },
+      {
+        type: "Text",
+        text: "Hello",
+        fileIdentifier: "filename",
+        startIndex: 20,
+        endIndex: 24,
+      },
+    ]);
+
+    assertEquals(results, [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+    ]);
+  },
+});*/

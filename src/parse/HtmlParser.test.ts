@@ -1,4 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
+import { parseExpression } from "../acorn.ts";
 import HtmlParser from "./HtmlParser.ts";
 
 const parse = (str: string) => {
@@ -351,7 +352,7 @@ Deno.test({
               modifier: null,
               body: {
                 type: "ScriptExpression",
-                expression: "12",
+                expression: parseExpression("12"),
                 fileIdentifier: "filename",
                 startIndex: 23,
                 endIndex: 24,

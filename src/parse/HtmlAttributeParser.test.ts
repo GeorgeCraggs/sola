@@ -1,4 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
+import { parseExpression } from "../acorn.ts";
 import HtmlAttributeParser from "./HtmlAttributeParser.ts";
 
 const parse = (str: string) => {
@@ -166,7 +167,7 @@ Deno.test({
           name: "key",
           body: {
             type: "ScriptExpression",
-            expression: `expression > "123"`,
+            expression: parseExpression(`expression > "123"`),
             fileIdentifier: "filename",
             startIndex: 5,
             endIndex: 22,
@@ -208,7 +209,7 @@ Deno.test({
           name: "key",
           body: {
             type: "ScriptExpression",
-            expression: `{ something: a, "something-else": false }`,
+            expression: parseExpression(`{ something: a, "something-else": false }`),
             fileIdentifier: "filename",
             startIndex: 5,
             endIndex: 45,
@@ -266,7 +267,7 @@ Deno.test({
           name: "key",
           body: {
             type: "ScriptExpression",
-            expression: `expression > "123"`,
+            expression: parseExpression(`expression > "123"`),
             fileIdentifier: "filename",
             startIndex: 15,
             endIndex: 32,
@@ -321,7 +322,7 @@ Deno.test({
           name: "key",
           body: {
             type: "ScriptExpression",
-            expression: `expression > "123"`,
+            expression: parseExpression(`expression > "123"`),
             fileIdentifier: "filename",
             startIndex: 30,
             endIndex: 47,
@@ -394,7 +395,7 @@ Deno.test({
           modifier: null,
           body: {
             type: "ScriptExpression",
-            expression: "doSomething",
+            expression: parseExpression("doSomething"),
             fileIdentifier: "filename",
             startIndex: 10,
             endIndex: 20,
@@ -438,7 +439,7 @@ Deno.test({
           modifier: "once",
           body: {
             type: "ScriptExpression",
-            expression: "doSomething",
+            expression: parseExpression("doSomething"),
             fileIdentifier: "filename",
             startIndex: 15,
             endIndex: 25,
@@ -511,7 +512,7 @@ Deno.test({
           modifier: null,
           body: {
             type: "ScriptExpression",
-            expression: "count = count + 1",
+            expression: parseExpression("count = count + 1"),
             fileIdentifier: "filename",
             startIndex: 67,
             endIndex: 83,
@@ -523,7 +524,7 @@ Deno.test({
           modifier: null,
           body: {
             type: "ScriptExpression",
-            expression: "count > 2",
+            expression: parseExpression("count > 2"),
             fileIdentifier: "filename",
             startIndex: 116,
             endIndex: 124,

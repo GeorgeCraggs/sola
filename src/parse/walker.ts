@@ -1,17 +1,18 @@
 import { TemplateNode } from "./mod.ts";
 
-type CallbackContext = {
+export type CallbackContext = {
   skip: () => void;
   replace: (node: TemplateNode | null) => void;
 };
 
-type CallbackFunction = (
+export type CallbackFunction = (
   this: CallbackContext,
   node: TemplateNode,
   parents: TemplateNode[]
 ) => boolean | void;
 
-const walkNode = (
+export const walkNode = (
+  parents: TemplateNode[],
   node: TemplateNode,
   callback: CallbackFunction,
   replace: (node: TemplateNode | null) => void
@@ -26,27 +27,27 @@ const walkNode = (
       },
     },
     node,
-    []
+    parents,
   );
 
   if (skip) return true;
 
   if (!skip && !skipChildren) {
     if ("children" in node) {
-      walker(node.children, callback);
+      walker(node.children, callback, [...parents, node]);
     }
 
     if ("elseChildren" in node) {
-      walker(node.elseChildren, callback);
+      walker(node.elseChildren, callback, [...parents, node]);
     }
   }
 
   return false;
 };
 
-const walker = (ast: TemplateNode[], callback: CallbackFunction) => {
+const walker = (ast: TemplateNode[], callback: CallbackFunction, parents?: TemplateNode[]) => {
   for (const [index, node] of ast.entries()) {
-    if (walkNode(node, callback, (newNode) => {
+    if (walkNode(parents ?? [], node, callback, (newNode) => {
       if (newNode) {
         ast.splice(index, 1, newNode);
       } else {

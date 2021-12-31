@@ -1,4 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
+import { parseExpression } from "../acorn.ts";
 import ExpressionParser from "./ExpressionParser.ts";
 
 const parse = (str: string) => {
@@ -24,7 +25,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "ScriptExpression",
-        expression: "expression",
+        expression: parseExpression("expression"),
         fileIdentifier: "filename",
         startIndex: 0,
         endIndex: 11,
@@ -41,7 +42,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "ScriptExpression",
-        expression: "{ something: count > 12 }",
+        expression: parseExpression("{ something: count > 12 }"),
         fileIdentifier: "filename",
         startIndex: 0,
         endIndex: 26,
@@ -58,7 +59,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "IfBlock",
-        conditionExpression: "condition > 99",
+        conditionExpression: parseExpression("condition > 99"),
         children: [],
         elseChildren: [],
         fileIdentifier: "filename",
@@ -77,7 +78,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "IfBlock",
-        conditionExpression: "condition > 99",
+        conditionExpression: parseExpression("condition > 99"),
         children: [
           {
             type: "Text",
@@ -105,7 +106,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "IfBlock",
-        conditionExpression: "condition > 99",
+        conditionExpression: parseExpression("condition > 99"),
         children: [
           {
             type: "Text",
@@ -140,7 +141,7 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "IfBlock",
-        conditionExpression: "thing",
+        conditionExpression: parseExpression("thing"),
         children: [
           {
             type: "HtmlTag",
@@ -181,12 +182,12 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "EachBlock",
-        iterator: "iterable",
-        params: "value, index",
+        iterator: parseExpression("iterable"),
+        params: parseExpression("value, index"),
         children: [
           {
             type: "ScriptExpression",
-            expression: "value",
+            expression: parseExpression("value"),
             fileIdentifier: "filename",
             startIndex: 32,
             endIndex: 38,
@@ -215,8 +216,8 @@ Deno.test({
     assertEquals(parser.getNodes(), [
       {
         type: "EachBlock",
-        iterator: "iterable",
-        params: "value, index",
+        iterator: parseExpression("iterable"),
+        params: parseExpression("value, index"),
         children: [
           {
             type: "HtmlTag",
@@ -241,7 +242,7 @@ Deno.test({
           },
           {
             type: "IfBlock",
-            conditionExpression: "index === 0",
+            conditionExpression: parseExpression("index === 0"),
             children: [
               {
                 type: "Text",

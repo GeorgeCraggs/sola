@@ -1,5 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
-import parseTemplate from "./mod.ts";
+import { parseExpression } from "../acorn.ts";
+import { parseTemplate } from "./mod.ts";
 
 Deno.test({
   name: "empty string gives no nodes",
@@ -226,7 +227,7 @@ Deno.test({
                     children: [
                       {
                         endIndex: 459,
-                        expression: "thing",
+                        expression: parseExpression("thing"),
                         fileIdentifier: "file",
                         startIndex: 453,
                         type: "ScriptExpression",
@@ -241,8 +242,8 @@ Deno.test({
                 ],
                 endIndex: 482,
                 fileIdentifier: "file",
-                iterator: "things",
-                params: "thing, index",
+                iterator: parseExpression("things"),
+                params: parseExpression("thing, index"),
                 startIndex: 394,
                 type: "EachBlock",
               },
