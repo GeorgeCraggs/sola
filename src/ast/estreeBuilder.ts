@@ -1,4 +1,4 @@
-import { estree } from "../acorn.ts";
+import { estree } from "./estree.ts";
 import { generate as b } from "./estreeHelper.ts";
 
 class BaseBuilder {

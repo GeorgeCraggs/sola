@@ -10,7 +10,7 @@ export default async function compileBackend(filePath: string) {
     .replace(/\/components\//, "/build/")
     .replace(/\.sola\.html/, ".js");
 
-  const uuid = new Md5().update(outputFile).toString();
+  const uuid = new Md5().update(outputFile).toString().substring(0, 11);
 
   const { template, scripts, styles } = parse(filePath, await Deno.readTextFile(filePath));
 

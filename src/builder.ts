@@ -123,9 +123,11 @@ export const Styles = \`${styles}\`;
                   b.block([
                     b.return(
                       rewriteState(
-                        typeof value === "string" ? acorn.parseExpressionAt(value, 0, {
-                          ecmaVersion: 2022,
-                        }) as estree.Expression : value.expression,
+                        typeof value === "string"
+                          ? (acorn.parseExpressionAt(value, 0, {
+                              ecmaVersion: 2022,
+                            }) as estree.Expression)
+                          : value.expression,
                         stateShape,
                         context
                       ) as estree.Expression
@@ -141,23 +143,27 @@ export const Styles = \`${styles}\`;
             type: "ObjectExpression",
             properties: Object.values(directives)
               .filter(({ type, name }) => type === "bind" && name === "value")
-              .map(({ id, value }) => ({
-                type: "Property",
-                method: false,
-                shorthand: false,
-                computed: false,
-                key: {
-                  type: "Literal",
-                  value: id,
-                  raw: `"${id}"`,
-                },
-                value: typeof value === "string" ? {
-                  type: "Literal",
-                  value: value,
-                  raw: `"${value}"`,
-                } : value.expression,
-                kind: "init",
-              })),
+              .map(({ id, value }) => {
+                const expression =
+                  typeof value === "string" ? b.str(value) : value.expression;
+                if (expression.type !== "Identifier") {
+                  throw new Error(`Must be Identifier (found ${expression.type})`);
+                }
+
+                return {
+                  type: "Property",
+                  method: false,
+                  shorthand: false,
+                  computed: false,
+                  key: {
+                    type: "Literal",
+                    value: id,
+                    raw: `"${id}"`,
+                  },
+                  value: b.str(expression.name),
+                  kind: "init",
+                };
+              }),
           };
           this.replace(expression);
         } else if (elementValue === "CODE") {

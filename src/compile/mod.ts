@@ -1,5 +1,5 @@
 import { StateShape } from "../state.ts";
-import { TemplateNode, HtmlTagNode, EachBlock } from "../parse/mod.ts";
+import { TemplateNode, HtmlTagNode } from "../parse/mod.ts";
 import { estree, Builder, generate } from "../ast/estree.ts";
 import { rewriteState } from "../state.ts";
 

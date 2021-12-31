@@ -30,12 +30,12 @@
       <input
         class="rounded border border-gray-800 px-3"
         type="text"
-        bind:value="todoInputName"
+        bind:value={todoInputName}
         placeholder="Enter a todo"
       />
       <button
         class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
-        on:click="addTodo"
+        on:click={addTodo}
       >
         Add
       </button>
@@ -69,7 +69,7 @@
     <li class="flex gap-4 p-3 border rounded items-center">
       <button
         class="border-2 border-gray-500 rounded w-5 h-5"
-        on:click="console.log('TODO: Directives in #each context')"
+        on:click={console.log('TODO: Directives in #each context')}
       >
         <span class="sr-only">{todo.complete ? 'Complete' : 'Incomplete'}</span>
       </button>

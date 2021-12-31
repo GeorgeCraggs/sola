@@ -1,4 +1,5 @@
-import { acorn, estree } from "./acorn.ts";
+import { estree } from "./ast/estree.ts";
+import { acorn } from "./acorn.ts";
 import { walk as walkJs } from "https://esm.sh/estree-walker";
 import { TemplateNode } from "./parse/mod.ts";
 import walkHtml from "./parse/walker.ts";

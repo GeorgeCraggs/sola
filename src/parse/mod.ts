@@ -1,5 +1,6 @@
 import GeneralParser from "./GeneralParser.ts";
-import { acorn, estree } from "../acorn.ts";
+import { estree } from "../ast/estree.ts";
+import { acorn } from "../acorn.ts";
 import walk from "./walker.ts";
 
 export class ParseErrorCollection extends Error {

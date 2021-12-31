@@ -1,5 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
-import { estree, parseExpression } from "../acorn.ts";
+import { estree } from "./estree.ts";
+import { parseExpression } from "../acorn.ts";
 import Builder from "./estreeBuilder.ts";
 import { generate as b } from "./estreeHelper.ts";
 
