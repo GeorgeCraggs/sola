@@ -27,12 +27,6 @@ const compileHtmlTag = (
     addQuasis(`"`);
   });
 
-  if (node.attributes.directives.length > 0) {
-    addQuasis(` data-sola-directives="`);
-    addQuasis(JSON.stringify(node.attributes.directives));
-    addQuasis(`"`);
-  }
-
   if (
     [
       "area",
