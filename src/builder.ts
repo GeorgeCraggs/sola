@@ -116,7 +116,7 @@ export const Styles = \`${styles}\`;
                 method: false,
                 shorthand: false,
                 computed: false,
-                key: b.id(id),
+                key: b.str(id),
                 kind: "init",
                 value: b.fn(
                   [],
