@@ -1,5 +1,5 @@
 import { StateShape } from "../state.ts";
-import { TemplateNode, HtmlTagNode } from "../parse/mod.ts";
+import { Node, HtmlTagNode } from "../ast/sfc.ts";
 import { estree, Builder, generate } from "../ast/estree.ts";
 import { rewriteState } from "../state.ts";
 
@@ -12,7 +12,7 @@ const compileHtmlTag = (
 ) => {
   addQuasis("<" + node.tag);
 
-  node.attributes.attributes.forEach((attribute) => {
+  node.attributes.forEach((attribute) => {
     addQuasis(` ${attribute.name}="`);
     if (typeof attribute.body === "string") {
       addQuasis(attribute.body);
@@ -58,7 +58,7 @@ const compileHtmlTag = (
 };
 
 const convertToAst = (
-  tree: TemplateNode[],
+  tree: Node[],
   stateShape: StateShape,
   context: string[]
 ): estree.Expression => {
@@ -97,7 +97,7 @@ const convertToAst = (
       compileHtmlTag(node, addExpression, addQuasis, stateShape, context);
     }
 
-    if (node.type === "ScriptExpression") {
+    if (node.type === "Expression") {
       addExpression(
         new Builder()
           .id("escapeHtml")

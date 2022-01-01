@@ -2,6 +2,7 @@ import GeneralParser from "./GeneralParser.ts";
 import { estree } from "../ast/estree.ts";
 import { acorn } from "../acorn.ts";
 import walk from "./walker.ts";
+import { TextNode } from "../ast/sfc.ts";
 
 export class ParseErrorCollection extends Error {
   constructor(errors: ParseError[]) {
@@ -22,78 +23,6 @@ export class ParseError extends Error {
     this.index = index;
   }
 }
-
-export type Attribute = {
-  name: string;
-  body: string | ScriptExpression;
-};
-
-export type Directive = {
-  type: string;
-  property: string;
-  modifier: string | null;
-  body: string | ScriptExpression;
-};
-
-export type AttributeList = {
-  type: "AttributeList";
-  attributes: Attribute[];
-  directives: Directive[];
-};
-
-export type HtmlTagNode = {
-  type: "HtmlTag";
-  tag: string;
-  attributes: AttributeList;
-  children: TemplateNode[];
-  fileIdentifier: string;
-  startIndex: number;
-  endIndex: number;
-};
-
-export type TextNode = {
-  type: "Text";
-  text: string;
-  fileIdentifier: string;
-  startIndex: number;
-  endIndex: number;
-};
-
-export type ScriptExpression = {
-  type: "ScriptExpression";
-  expression: estree.Expression;
-  fileIdentifier: string;
-  startIndex: number;
-  endIndex: number;
-};
-
-export type IfBlock = {
-  type: "IfBlock";
-  conditionExpression: estree.Expression;
-  children: TemplateNode[];
-  elseChildren: TemplateNode[];
-  fileIdentifier: string;
-  startIndex: number;
-  endIndex: number;
-};
-
-export type EachBlock = {
-  type: "EachBlock";
-  iterator: estree.Expression;
-  params: estree.Pattern[];
-  children: TemplateNode[];
-  fileIdentifier: string;
-  startIndex: number;
-  endIndex: number;
-};
-
-export type ScriptBlock = IfBlock | EachBlock;
-
-export type TemplateNode =
-  | HtmlTagNode
-  | TextNode
-  | ScriptExpression
-  | ScriptBlock;
 
 const indexToLineAndCol = (index: number, text: string) => {
   if (index < 0) {

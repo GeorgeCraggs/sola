@@ -1,10 +1,6 @@
 import Parser from "./Parser.ts";
-import {
-  ParseError,
-  ScriptExpression,
-  IfBlock,
-  EachBlock,
-} from "./mod.ts";
+import { ParseError } from "./mod.ts";
+import { ExpressionNode, IfBlockNode, EachBlockNode } from "../ast/sfc.ts";
 import GeneralParser from "./GeneralParser.ts";
 import { parseExpression } from "../acorn.ts";
 import { validateEachParams } from "../ast/estree.ts";
@@ -12,7 +8,7 @@ import { validateEachParams } from "../ast/estree.ts";
 class ExpressionParser extends Parser {
   private depth = 0;
   private parser: GeneralParser | null = null;
-  private block: IfBlock | EachBlock | null = null;
+  private block: IfBlockNode | EachBlockNode | null = null;
   private blockName = "";
   private useElse = false;
   private startIndex: number | null = null;
@@ -67,10 +63,12 @@ class ExpressionParser extends Parser {
             type: "Identifier",
             name: "",
           },
-          params: [{
-            type: "Identifier",
-            name: "",
-          }],
+          params: [
+            {
+              type: "Identifier",
+              name: "",
+            },
+          ],
           children: [],
           fileIdentifier: this.fileIdentifier,
           startIndex: this.startIndex === null ? -1 : this.startIndex,
@@ -142,7 +140,7 @@ class ExpressionParser extends Parser {
     return true;
   }
 
-  getNodes(): (ScriptExpression | IfBlock | EachBlock)[] {
+  getNodes(): (ExpressionNode | IfBlockNode | EachBlockNode)[] {
     if (this.depth > 0) {
       throw new ParseError("Missing matching '}' for '{' on ...", "", -1);
     }
@@ -158,7 +156,7 @@ class ExpressionParser extends Parser {
     return this.block === null
       ? [
           {
-            type: "ScriptExpression",
+            type: "Expression",
             expression: parseExpression(this.buffer.trim()),
             fileIdentifier: this.fileIdentifier,
             startIndex: this.startIndex === null ? -1 : this.startIndex,

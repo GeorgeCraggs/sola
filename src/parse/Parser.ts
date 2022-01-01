@@ -1,4 +1,4 @@
-import { TemplateNode } from "./mod.ts";
+import { Node } from "../ast/sfc.ts";
 
 class Parser {
   protected buffer = "";
@@ -19,11 +19,11 @@ class Parser {
     throw new Error("Method 'processChar()' must be implemented.");
   }
   /**
-   * Returns generated TemplateNodes - will throw ParseErrorCollection if there
+   * Returns generated Nodes - will throw ParseErrorCollection if there
    * was an error parsing (only call when processChar returns false, or
    * characters have been exhausted)
    */
-  getNodes(): TemplateNode[] {
+  getNodes(): Node[] {
     throw new Error("Method 'getNodes()' must be implemented.");
   }
 }

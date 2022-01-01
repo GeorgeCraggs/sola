@@ -1,5 +1,6 @@
 import Parser from "./Parser.ts";
-import { AttributeList, ParseError, ScriptExpression } from "./mod.ts";
+import { ParseError } from "./mod.ts";
+import { ExpressionNode, Attribute, Directive } from "../ast/sfc.ts";
 import { parseExpression } from "../acorn.ts";
 
 class AttributeBodyParser extends Parser {
@@ -44,7 +45,7 @@ class AttributeBodyParser extends Parser {
     return true;
   }
 
-  getBody(): string | ScriptExpression {
+  getBody(): string | ExpressionNode {
     if (!this.isComplete) {
       throw new ParseError("Failed to parse attribute", "", -1);
     }
@@ -52,7 +53,7 @@ class AttributeBodyParser extends Parser {
     return this.delimeter === `"`
       ? this.buffer
       : {
-          type: "ScriptExpression",
+          type: "Expression",
           expression: parseExpression(this.buffer),
           fileIdentifier: this.fileIdentifier,
           startIndex: this.startIndex === null ? -1 : this.startIndex,
@@ -66,8 +67,7 @@ class AttributeBodyParser extends Parser {
 }
 
 class HtmlAttributeParser extends Parser {
-  private attributes: AttributeList = {
-    type: "AttributeList",
+  private attributes: { attributes: Attribute[], directives: Directive[] } = {
     attributes: [],
     directives: [],
   };

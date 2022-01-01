@@ -1,5 +1,6 @@
 import Parser from "./Parser.ts";
-import { TemplateNode, ParseError, ParseErrorCollection } from "./mod.ts";
+import { ParseError, ParseErrorCollection } from "./mod.ts";
+import { Node } from "../ast/sfc.ts";
 import HtmlParser from "./HtmlParser.ts";
 import TextParser from "./TextParser.ts";
 import ExpressionParser from "./ExpressionParser.ts";
@@ -11,7 +12,7 @@ import ExpressionParser from "./ExpressionParser.ts";
 
 class GeneralParser extends Parser {
   private parser: Parser | null = null;
-  private nodes: TemplateNode[] = [];
+  private nodes: Node[] = [];
   private errors: ParseError[] = [];
 
   processChar(character: string, index: number) {

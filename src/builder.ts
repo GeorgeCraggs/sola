@@ -3,7 +3,7 @@ import { estree, generate as b } from "./ast/estree.ts";
 import { walk } from "https://esm.sh/estree-walker";
 import { generate } from "https://deno.land/x/astring/src/astring.js";
 import { rewriteState, StateShape } from "./state.ts";
-import { ScriptExpression } from "./parse/mod.ts";
+import { ExpressionNode } from "./ast/sfc.ts";
 
 // TODO: Make POST check only generate if there is state
 // TODO: Escape styles
@@ -18,7 +18,7 @@ const build = (
       type: "on" | "bind" | "class";
       name: string;
       modifier: string;
-      value: string | ScriptExpression;
+      value: string | ExpressionNode;
     };
   },
   styles: string

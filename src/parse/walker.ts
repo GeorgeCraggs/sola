@@ -1,21 +1,21 @@
-import { TemplateNode } from "./mod.ts";
+import { Node } from "../ast/sfc.ts";
 
 export type CallbackContext = {
   skip: () => void;
-  replace: (node: TemplateNode | null) => void;
+  replace: (node: Node | null) => void;
 };
 
 export type CallbackFunction = (
   this: CallbackContext,
-  node: TemplateNode,
-  parents: TemplateNode[]
+  node: Node,
+  parents: Node[]
 ) => boolean | void;
 
 export const walkNode = (
-  parents: TemplateNode[],
-  node: TemplateNode,
+  parents: Node[],
+  node: Node,
   callback: CallbackFunction,
-  replace: (node: TemplateNode | null) => void
+  replace: (node: Node | null) => void
 ): boolean => {
   let skip = false;
 
@@ -45,7 +45,7 @@ export const walkNode = (
   return false;
 };
 
-const walker = (ast: TemplateNode[], callback: CallbackFunction, parents?: TemplateNode[]) => {
+const walker = (ast: Node[], callback: CallbackFunction, parents?: Node[]) => {
   for (const [index, node] of ast.entries()) {
     if (walkNode(parents ?? [], node, callback, (newNode) => {
       if (newNode) {

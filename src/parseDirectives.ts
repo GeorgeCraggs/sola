@@ -1,21 +1,21 @@
-import { TemplateNode, ScriptExpression } from "./parse/mod.ts";
+import { Node, ExpressionNode } from "./ast/sfc.ts";
 import walk from "./parse/walker.ts";
 
-const parseDirectives = (id: string, ast: TemplateNode[]) => {
+const parseDirectives = (id: string, ast: Node[]) => {
   const directives: {
     [key: string]: {
       id: string;
       type: "on" | "bind" | "class";
       name: string;
       modifier: string;
-      value: string | ScriptExpression;
+      value: string | ExpressionNode;
     };
   } = {};
 
   walk(ast, (node) => {
     if (node.type !== "HtmlTag") return;
 
-    node.attributes.directives.forEach(
+    node.directives.forEach(
       ({ type: directiveType, property, modifier, body }) => {
         const key = id + Object.keys(directives).length;
 
@@ -43,7 +43,7 @@ const parseDirectives = (id: string, ast: TemplateNode[]) => {
           if (typeof body === "string") {
             throw new Error("on:click directive can't be string");
           }
-          node.attributes.attributes.push(
+          node.attributes.push(
             {
               name: "type",
               body: "submit",
@@ -64,7 +64,7 @@ const parseDirectives = (id: string, ast: TemplateNode[]) => {
             );
           }
           if (property === "value") {
-            node.attributes.attributes.push({
+            node.attributes.push({
               name: "name",
               body: key,
             });

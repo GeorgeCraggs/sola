@@ -1,5 +1,6 @@
 import Parser from "./Parser.ts";
-import { HtmlTagNode, AttributeList, ParseError, TemplateNode } from "./mod.ts";
+import { ParseError } from "./mod.ts";
+import { HtmlTagNode, Attribute, Directive, Node } from "../ast/sfc.ts";
 import GeneralParser from "./GeneralParser.ts";
 import LiteralTextParser from "./LiteralTextParser.ts";
 import HtmlAttributeParser from "./HtmlAttributeParser.ts";
@@ -11,8 +12,11 @@ class HtmlParser extends Parser {
     | LiteralTextParser
     | null = null;
   private tag = "";
-  private attributes: AttributeList | null = null;
-  private children: TemplateNode[] = [];
+  private attributes: {
+    attributes: Attribute[];
+    directives: Directive[];
+  } | null = null;
+  private children: Node[] = [];
   private startIndex: number | null = null;
   private endIndex: number | null = null;
   private textTags = ["script", "style", "pre", "textarea"];
@@ -55,7 +59,6 @@ class HtmlParser extends Parser {
     if (this.tag === "" && this.parser === null && character === ">") {
       this.tag = this.buffer.slice(1, this.buffer.length - 1).trim();
       this.attributes = {
-        type: "AttributeList",
         attributes: [],
         directives: [],
       };
@@ -155,7 +158,7 @@ class HtmlParser extends Parser {
       {
         type: "HtmlTag",
         tag: this.tag,
-        attributes: this.attributes,
+        ...this.attributes,
         children: this.children,
         fileIdentifier: this.fileIdentifier,
         startIndex: this.startIndex === null ? -1 : this.startIndex,

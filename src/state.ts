@@ -1,7 +1,6 @@
 import { estree } from "./ast/estree.ts";
-import { acorn } from "./acorn.ts";
+import { Node } from "./ast/sfc.ts";
 import { walk as walkJs } from "https://esm.sh/estree-walker";
-import { TemplateNode } from "./parse/mod.ts";
 import walkHtml from "./parse/walker.ts";
 import { generate } from "./ast/estree.ts";
 
@@ -188,48 +187,39 @@ export const rewriteState = (
 };
 
 export const updateFormState = (
-  ast: TemplateNode[],
+  ast: Node[],
   stateShape: StateShape
 ) => {
   walkHtml(ast, function (node) {
     if (node.type === "HtmlTag" && node.tag === "form") {
-      const methodAttr = node.attributes.attributes.find(
+      const methodAttr = node.attributes.find(
         (a) => a.name === "method"
       );
       if (!methodAttr) {
-        node.attributes.attributes.push({ name: "method", body: "post" });
+        node.attributes.push({ name: "method", body: "post" });
         Object.keys(stateShape).forEach((stateName) => {
           node.children.push({
             type: "HtmlTag",
             tag: "input",
-            attributes: {
-              type: "AttributeList",
-              attributes: [
-                {
-                  name: "type",
-                  body: "hidden",
+            attributes: [
+              {
+                name: "type",
+                body: "hidden",
+              },
+              {
+                name: "name",
+                body: stateName,
+              },
+              {
+                name: "value",
+                body: {
+                  type: "Expression",
+                  expression: generate.id(stateName),
                 },
-                {
-                  name: "name",
-                  body: stateName,
-                },
-                {
-                  name: "value",
-                  body: {
-                    type: "ScriptExpression",
-                    expression: generate.id(stateName),
-                    fileIdentifier: "",
-                    startIndex: -1,
-                    endIndex: -1,
-                  },
-                },
-              ],
-              directives: [],
-            },
+              },
+            ],
+            directives: [],
             children: [],
-            fileIdentifier: "",
-            startIndex: -1,
-            endIndex: -1,
           });
         });
         this.skip();

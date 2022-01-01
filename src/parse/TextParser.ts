@@ -1,4 +1,4 @@
-import { TextNode } from "./mod.ts";
+import { TextNode } from "../ast/sfc.ts";
 import LiteralTextParser from "./LiteralTextParser.ts";
 
 class TextParser extends LiteralTextParser {

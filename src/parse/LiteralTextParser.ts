@@ -1,5 +1,5 @@
 import Parser from "./Parser.ts";
-import { TextNode } from "./mod.ts";
+import { TextNode } from "../ast/sfc.ts";
 
 class LiteralTextParser extends Parser {
   private startIndex: number | null = null;
