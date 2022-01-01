@@ -1,4 +1,4 @@
-import { Md5 } from "https://deno.land/std@0.116.0/hash/md5.ts";
+import { Md5 } from "https://deno.land/std@0.119.0/hash/md5.ts";
 import { parseState, updateFormState, rewriteState } from "./state.ts";
 import parseDirectives from "./parseDirectives.ts";
 import build from "./builder.ts";

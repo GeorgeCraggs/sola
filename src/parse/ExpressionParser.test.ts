@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.119.0/testing/asserts.ts";
 import { parseExpression } from "../acorn.ts";
 import ExpressionParser from "./ExpressionParser.ts";
 

@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.116.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.119.0/http/server.ts";
 import * as Home from "./build/Home.js";
 import * as Error404 from "./build/Error404.js";
 import * as Counter from "./build/Counter.js";
@@ -71,5 +71,5 @@ serve(
       }
     );
   },
-  { addr: ":8005" }
+  { port: 8005 }
 );

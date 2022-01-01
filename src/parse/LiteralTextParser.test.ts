@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.119.0/testing/asserts.ts";
 import LiteralTextParser from "./LiteralTextParser.ts";
 
 const parse = (str: string) => {
