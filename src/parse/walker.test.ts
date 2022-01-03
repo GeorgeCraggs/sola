@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.119.0/testing/asserts.ts";
 import walker from "./walker.ts";
-import { HtmlTagNode, EachBlock, TextNode } from "./mod.ts";
+import { HtmlTagNode, EachBlockNode, TextNode } from "../ast/sfc.ts";
 
 Deno.test({
   name: "walks top-level nodes",
@@ -8,11 +8,8 @@ Deno.test({
     const firstNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [],
       fileIdentifier: "",
       startIndex: -1,
@@ -22,11 +19,8 @@ Deno.test({
     const secondNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [],
       fileIdentifier: "",
       startIndex: -1,
@@ -54,7 +48,7 @@ Deno.test({
       endIndex: -1,
     };
 
-    const firstNodeChild: EachBlock = {
+    const firstNodeChild: EachBlockNode = {
       type: "EachBlock",
       params: [{
         type: "Identifier",
@@ -73,11 +67,8 @@ Deno.test({
     const firstNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [firstNodeChild],
       fileIdentifier: "",
       startIndex: -1,
@@ -87,11 +78,8 @@ Deno.test({
     const secondNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [],
       fileIdentifier: "",
       startIndex: -1,
@@ -124,7 +112,7 @@ Deno.test({
       endIndex: -1,
     };
 
-    const firstNodeChild: EachBlock = {
+    const firstNodeChild: EachBlockNode = {
       type: "EachBlock",
       params: [{
         type: "Identifier",
@@ -143,11 +131,8 @@ Deno.test({
     const firstNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [firstNodeChild],
       fileIdentifier: "",
       startIndex: -1,
@@ -157,11 +142,8 @@ Deno.test({
     const secondNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [],
       fileIdentifier: "",
       startIndex: -1,
@@ -191,7 +173,7 @@ Deno.test({
       endIndex: -1,
     };
 
-    const firstNodeChild: EachBlock = {
+    const firstNodeChild: EachBlockNode = {
       type: "EachBlock",
       params: [{
         type: "Identifier",
@@ -210,11 +192,8 @@ Deno.test({
     const firstNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [firstNodeChild],
       fileIdentifier: "",
       startIndex: -1,
@@ -224,11 +203,8 @@ Deno.test({
     const secondNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [],
       fileIdentifier: "",
       startIndex: -1,
@@ -266,7 +242,7 @@ Deno.test({
       endIndex: -1,
     };
 
-    const firstNodeChild: EachBlock = {
+    const firstNodeChild: EachBlockNode = {
       type: "EachBlock",
       params: [{
         type: "Identifier",
@@ -285,11 +261,8 @@ Deno.test({
     const firstNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [firstNodeChild],
       fileIdentifier: "",
       startIndex: -1,
@@ -299,11 +272,8 @@ Deno.test({
     const secondNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [],
       fileIdentifier: "",
       startIndex: -1,
@@ -326,7 +296,7 @@ Deno.test({
       }
     });
 
-    assertEquals(((firstNode.children[0] as EachBlock).children[0] as TextNode).text, "Replaced");
+    assertEquals(((firstNode.children[0] as EachBlockNode).children[0] as TextNode).text, "Replaced");
   },
 });
 
@@ -341,7 +311,7 @@ Deno.test({
       endIndex: -1,
     };
 
-    const firstNodeChild: EachBlock = {
+    const firstNodeChild: EachBlockNode = {
       type: "EachBlock",
       params: [{
         type: "Identifier",
@@ -360,11 +330,8 @@ Deno.test({
     const firstNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [firstNodeChild],
       fileIdentifier: "",
       startIndex: -1,
@@ -374,11 +341,8 @@ Deno.test({
     const secondNode: HtmlTagNode = {
       type: "HtmlTag",
       tag: "",
-      attributes: {
-        type: "AttributeList",
-        attributes: [],
-        directives: [],
-      },
+      attributes: [],
+      directives: [],
       children: [],
       fileIdentifier: "",
       startIndex: -1,
@@ -393,6 +357,6 @@ Deno.test({
       }
     });
 
-    assertEquals((firstNode.children[0] as EachBlock).children[0], undefined);
+    assertEquals((firstNode.children[0] as EachBlockNode).children[0], undefined);
   },
 });

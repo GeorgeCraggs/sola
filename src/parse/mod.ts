@@ -2,7 +2,7 @@ import GeneralParser from "./GeneralParser.ts";
 import { estree } from "../ast/estree.ts";
 import { acorn } from "../acorn.ts";
 import walk from "./walker.ts";
-import { TextNode } from "../ast/sfc.ts";
+import { Node, TextNode } from "../ast/sfc.ts";
 
 export class ParseErrorCollection extends Error {
   constructor(errors: ParseError[]) {
@@ -84,6 +84,45 @@ export default (fileIdentifier: string, fileContent: string) => {
     }
 
     return true;
+  });
+
+  const getNextAndPrevSiblings = (
+    node: Node,
+    parents: Node[],
+    prop: "children" | "elseChildren" | null
+  ): { previous: Node | null, next: Node | null } => {
+    const parent = parents.length > 0 ? parents[parents.length - 1] : null;
+
+    const siblings =
+      /** @ts-ignore */
+      prop && parent && prop in parent ? parent[prop] : ast;
+    const index = siblings.indexOf(node);
+
+    return {
+      previous: siblings[index - 1] || null,
+      next: siblings[index + 1] || null,
+    };
+  };
+
+  // Remove whitespace between HtmlTags and other nodes
+  walk(ast, function (node, parents, prop) {
+    if (node.type !== "Text") {
+      return;
+    }
+
+    const { previous, next } = getNextAndPrevSiblings(node, parents, prop);
+
+    if (previous === null || previous.type !== "Expression") {
+      node.text = node.text.trimStart();
+    }
+
+    if (next === null || next.type !== "Expression") {
+      node.text = node.text.trimEnd();
+    }
+
+    if (node.text === "") {
+      this.remove();
+    }
   });
 
   return { markup: ast, scripts, styles };
