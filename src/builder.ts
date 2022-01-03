@@ -1,5 +1,5 @@
 import { acorn } from "./acorn.ts";
-import { estree, generate as b } from "./ast/estree.ts";
+import { estree, Builder, generate as b } from "./ast/estree.ts";
 import { walk } from "https://esm.sh/estree-walker";
 import { generate } from "https://deno.land/x/astring/src/astring.js";
 import { rewriteState, ContextDescriptor } from "./state.ts";
@@ -43,9 +43,9 @@ export const Component = async function (req) {
     let action;
     const formData = await req.formData();
 
-    const actionName = formData.get("submit");
-    if (actionName in clickHandlers) {
-      action = clickHandlers[actionName]
+    const actionDetails = JSON.parse(formData.get("submit"));
+    if (actionDetails.h in clickHandlers) {
+      action = clickHandlers[actionDetails.h]
     }
 
     formData.forEach((value, name) => {
@@ -60,7 +60,7 @@ export const Component = async function (req) {
 
     while (typeof action === "function") {
       result = await _runner.call({state});
-      action = action.call({state, context: result.context});
+      action = action.call({state, context: result.context, actionDetails});
     }
   }
 
@@ -93,18 +93,45 @@ export const Styles = \`${styles}\`;
         } else if (elementValue === "CLICK_HANDLERS") {
           const expression: estree.ObjectExpression = {
             type: "ObjectExpression",
-            properties: events.map((event) => ({
-              type: "Property",
-              method: false,
-              shorthand: false,
-              computed: false,
-              key: b.str(event.key),
-              kind: "init",
-              value: b.fn(
-                [],
-                b.block([b.return(rewriteState(event.expression, context))])
-              ),
-            })),
+            properties: events.map((event) => {
+              const loopScopeDefs = event.loopContexts.flatMap((c, i) => [
+                b.def(
+                  "let",
+                  c.param,
+                  new Builder()
+                    .this()
+                    .get(b.id("actionDetails"))
+                    .get(b.id("i"))
+                    .get(b.num(i), true)
+                    .build()
+                ),
+                b.def(
+                  "let",
+                  c.vars,
+                  new Builder(rewriteState(c.iterator, context))
+                    .get(
+                      c.param,
+                      true
+                    )
+                    .build()
+                ),
+              ]);
+              return {
+                type: "Property",
+                method: false,
+                shorthand: false,
+                computed: false,
+                key: b.str(event.key),
+                kind: "init",
+                value: b.fn(
+                  [],
+                  b.block([
+                    ...loopScopeDefs,
+                    b.return(rewriteState(event.expression, context)),
+                  ])
+                ),
+              };
+            }),
           };
 
           this.replace(expression);

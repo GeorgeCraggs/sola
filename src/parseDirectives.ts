@@ -1,4 +1,4 @@
-import { Node, HtmlTagNode, ExpressionNode } from "./ast/sfc.ts";
+import { Node, HtmlTagNode, ExpressionNode, EachBlockNode } from "./ast/sfc.ts";
 import { estree, Builder, generate } from "./ast/estree.ts";
 import walk from "./parse/walker.ts";
 
@@ -14,6 +14,12 @@ export type Event = {
   type: "event";
   eventName: "click";
   expression: estree.Expression,
+  loopContexts: {
+    param: estree.Identifier,
+    vars: estree.Pattern,
+    iterator: estree.Expression,
+    eachBlock: EachBlockNode,
+  }[],
   node: HtmlTagNode;
   key: string;
 };
@@ -23,7 +29,7 @@ export type Directive = AttributeBind | Event;
 const processDirectives = (markup: Node[], componentId: string): Directive[] => {
   const directives: Directive[] = [];
 
-  walk(markup, (node) => {
+  walk(markup, (node, parents) => {
     if (node.type !== "HtmlTag") return;
 
     node.directives.forEach(
@@ -43,13 +49,39 @@ const processDirectives = (markup: Node[], componentId: string): Directive[] => 
             throw new Error(`on:click must not be string`);
           }
 
+          const loopParents = parents.filter(p => p.type === "EachBlock") as EachBlockNode[];
+          const clickLoopContexts = loopParents.map(p => {
+            if (p.params.length <= 1) {
+              p.params.push(generate.id("index"));
+            }
+            const indexParam = p.params[p.params.length - 1];
+            if (indexParam.type !== "Identifier") {
+              throw new Error("Index parameter for loop isn't Identifier");
+            }
+
+            return {
+              param: indexParam,
+              vars: p.params[0],
+              iterator: p.iterator,
+              eachBlock: p,
+            };
+          });
+
           directives.push({
             type: "event",
             eventName: property,
             expression: body.expression,
+            loopContexts: clickLoopContexts,
             key,
             node,
           });
+
+          const valueObj: ExpressionNode = {
+            type: "Expression",
+            expression: new Builder().id("JSON").callMember("stringify",
+              new Builder().obj().defineProp("h", generate.str(key)).defineProp("i", generate.array(clickLoopContexts.map(a => a.param))).build()
+            ).build(),
+          };
 
           node.attributes.push(
             {
@@ -62,8 +94,8 @@ const processDirectives = (markup: Node[], componentId: string): Directive[] => 
             },
             {
               name: "value",
-              body: key,
-            }
+              body: valueObj,
+            },
           );
 
           return;
@@ -109,88 +141,6 @@ const processDirectives = (markup: Node[], componentId: string): Directive[] => 
         }
 
         throw new Error(`Directive not supported ${directiveType}:${property}`);
-      }
-    );
-  });
-
-  return directives;
-};
-
-const parseDirectives = (id: string, ast: Node[]) => {
-  const directives: {
-    [key: string]: {
-      id: string;
-      type: "on" | "bind" | "class";
-      name: string;
-      modifier: string;
-      value: string | ExpressionNode;
-    };
-  } = {};
-
-  walk(ast, (node) => {
-    if (node.type !== "HtmlTag") return;
-
-    node.directives.forEach(
-      ({ type: directiveType, property, modifier, body }) => {
-        const key = id + Object.keys(directives).length;
-
-        if (
-          directiveType !== "on" &&
-          directiveType !== "bind" &&
-          directiveType !== "class"
-        ) {
-          throw new Error(`Invalid directive "${directiveType}"`);
-        }
-
-        directives[key] = {
-          id: key,
-          type: directiveType,
-          name: property || "",
-          modifier: modifier || "",
-          value: body,
-        };
-
-        if (
-          directiveType === "on" &&
-          property === "click" &&
-          node.tag === "button"
-        ) {
-          if (typeof body === "string") {
-            throw new Error("on:click directive can't be string");
-          }
-          node.attributes.push(
-            {
-              name: "type",
-              body: "submit",
-            },
-            {
-              name: "name",
-              body: "submit",
-            },
-            {
-              name: "value",
-              body: key,
-            }
-          );
-        } else if (directiveType === "bind" && property) {
-          if (typeof body === "string") {
-            throw new Error(
-              'bind directive can\'t be string (bind:a="b" should be bind:a={b})'
-            );
-          }
-          if (property === "value") {
-            node.attributes.push(
-              {
-                name: "name",
-                body: key,
-              },
-              {
-                name: "value",
-                body: key,
-              }
-            );
-          }
-        }
       }
     );
   });

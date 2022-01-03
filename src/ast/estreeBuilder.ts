@@ -29,9 +29,10 @@ class BaseBuilder<T extends estree.Node | undefined> {
 
   get(
     prop: estree.Expression | estree.PrivateIdentifier,
+    computed = false
   ) {
     return new MemberExpressionBuilder(
-      b.get((this.currentNode as estree.Expression), prop)
+      b.get((this.currentNode as estree.Expression), prop, computed)
     );
   }
 
@@ -49,6 +50,12 @@ class LiteralBuilder extends BaseBuilder<estree.Literal> {}
 class CallExpressionBuilder extends BaseBuilder<estree.CallExpression> {}
 class MemberExpressionBuilder extends BaseBuilder<estree.MemberExpression> {}
 class ThisBuilder extends BaseBuilder<estree.ThisExpression> {}
+class ObjectBuilder extends BaseBuilder<estree.ObjectExpression> {
+  defineProp(name: string, value: estree.Expression) {
+    this.currentNode?.properties.push(b.prop(b.str(name), value));
+    return this;
+  }
+}
 
 class Builder extends BaseBuilder<estree.Node> {
   id(name: string) {
@@ -59,6 +66,9 @@ class Builder extends BaseBuilder<estree.Node> {
   }
   this() {
     return new ThisBuilder(b.this());
+  }
+  obj() {
+    return new ObjectBuilder(b.obj([]));
   }
 }
 

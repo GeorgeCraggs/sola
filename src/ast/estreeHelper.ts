@@ -43,6 +43,34 @@ export const generate = {
     };
   },
   undef,
+  obj(props: estree.Property[]): estree.ObjectExpression {
+    return {
+      type: "ObjectExpression",
+      properties: props,
+    };
+  },
+  prop(
+    key: estree.Expression | estree.PrivateIdentifier,
+    value: estree.Identifier | estree.SimpleLiteral | estree.Expression
+  ): estree.Property {
+    return {
+      type: "Property",
+      method: false,
+      shorthand: false,
+      computed: false,
+      kind: "init",
+      key,
+      value,
+    };
+  },
+  array(
+    elements: (estree.Expression | estree.SpreadElement | null)[]
+  ): estree.ArrayExpression {
+    return {
+      type: "ArrayExpression",
+      elements,
+    };
+  },
 
   if(
     test: estree.Expression,
@@ -107,37 +135,54 @@ export const generate = {
 
   get(
     obj: estree.Expression | estree.Super,
-    prop: estree.Expression | estree.PrivateIdentifier
+    prop: estree.Expression | estree.PrivateIdentifier,
+    computed = false
   ): estree.MemberExpression {
     return {
       type: "MemberExpression",
       object: obj,
       property: prop,
-      computed: false,
+      computed,
       optional: false,
     };
   },
 
-  block(
-    body: estree.Statement[],
-  ): estree.BlockStatement {
+  block(body: estree.Statement[]): estree.BlockStatement {
     return {
       type: "BlockStatement",
       body,
     };
   },
 
-  return(
-    argument?: estree.Expression | null,
-  ): estree.ReturnStatement {
+  return(argument?: estree.Expression | null): estree.ReturnStatement {
     return {
       type: "ReturnStatement",
       argument,
     };
   },
+
+  def(
+    kind: "const" | "let" | "var",
+    id: estree.Pattern,
+    init?: estree.Expression | null
+  ): estree.VariableDeclaration {
+    return {
+      type: "VariableDeclaration",
+      kind,
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id,
+          init,
+        },
+      ],
+    };
+  },
 };
 
-const propToAssignmentProp = (prop: estree.Property | estree.SpreadElement): estree.AssignmentProperty => {
+const propToAssignmentProp = (
+  prop: estree.Property | estree.SpreadElement
+): estree.AssignmentProperty => {
   if (prop.type !== "Property") {
     throw new Error("");
   }
@@ -157,7 +202,9 @@ const propToAssignmentProp = (prop: estree.Property | estree.SpreadElement): est
   return prop as estree.AssignmentProperty;
 };
 
-export const validateEachParams = (exp: estree.Expression | estree.SpreadElement): estree.Pattern[] => {
+export const validateEachParams = (
+  exp: estree.Expression | estree.SpreadElement
+): estree.Pattern[] => {
   if (exp.type === "Identifier") {
     return [exp];
   }
@@ -167,10 +214,14 @@ export const validateEachParams = (exp: estree.Expression | estree.SpreadElement
   }
 
   if (exp.type === "ArrayExpression") {
-    return [{
-      type: "ArrayPattern",
-      elements: exp.elements.flatMap(exp => exp === null ? null : validateEachParams(exp)),
-    }];
+    return [
+      {
+        type: "ArrayPattern",
+        elements: exp.elements.flatMap((exp) =>
+          exp === null ? null : validateEachParams(exp)
+        ),
+      },
+    ];
   }
 
   if (exp.type === "ObjectExpression") {
@@ -178,7 +229,7 @@ export const validateEachParams = (exp: estree.Expression | estree.SpreadElement
       {
         type: "ObjectPattern",
         properties: exp.properties.map(propToAssignmentProp),
-      }
+      },
     ];
   }
 

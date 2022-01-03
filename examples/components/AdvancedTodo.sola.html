@@ -15,6 +15,10 @@
     todoInputName = "";
   }
 
+  const toggleComplete = (index) => {
+    todos[index].complete = !todos[index].complete;
+  }
+
   const tags = [...new Set(todos.map((t) => t.tags).flat(1))];
   const colourClasses = [
     ["bg-red-400", "hover:bg-red-500"],
@@ -65,12 +69,17 @@
   </div>
 
   <ol class="grid gap-4">
-    {#each todos as todo}
+    {#each todos as todo, i}
     <li class="flex gap-4 p-3 border rounded items-center">
       <button
-        class="border-2 border-gray-500 rounded w-5 h-5"
-        on:click={console.log('TODO: Directives in #each context')}
+        class="border-2 border-gray-500 text-gray-500 rounded w-5 h-5"
+        on:click={toggleComplete(i)}
       >
+        {#if todo.complete}
+        <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 80.5L60 125.5L142.5 34" stroke="currentColor" stroke-width="20"/>
+        </svg>
+        {/if}
         <span class="sr-only">{todo.complete ? 'Complete' : 'Incomplete'}</span>
       </button>
       {todo.name}

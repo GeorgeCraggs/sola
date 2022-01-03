@@ -1,8 +1,6 @@
 import { Md5 } from "https://deno.land/std@0.119.0/hash/md5.ts";
-//import { parseState, updateFormState, rewriteState } from "./state.ts";
 import { extractContext, addStateMarkup } from "./state.ts";
 import { rewriteState } from "./state.ts";
-import { Builder, generate } from "./ast/estree.ts";
 import processDirectives from "./parseDirectives.ts";
 import build from "./builder.ts";
 import parse from "./parse/mod.ts";
@@ -45,22 +43,4 @@ export default async function compileBackend(filePath: string) {
   );
 
   await Deno.writeTextFile(outputFile, outputText);
-
-  /*const { state, context } = parseState(script);
-  script = rewriteState(script, state, []);
-
-  updateFormState(markup, state);
-
-  const directives = parseDirectives(uuid, markup);
-
-  const outputText = build(
-    compileTemplate(markup, state, context),
-    script,
-    state,
-    context,
-    directives,
-    styles.join("\n")
-  );
-
-  await Deno.writeTextFile(outputFile, outputText);*/
 }
