@@ -2,9 +2,11 @@ import { estree } from "./ast/estree.ts";
 import { Node } from "./ast/sfc.ts";
 import { walk as walkJs } from "https://esm.sh/estree-walker";
 import walkHtml from "./parse/walker.ts";
-import { generate } from "./ast/estree.ts";
+import { Builder, generate } from "./ast/estree.ts";
+import { Directive, AttributeBind } from "./parseDirectives.ts";
+import replaceIdentifiers from "./state/rewriteState.ts";
 
-type Values = string | number | bigint | boolean | RegExp | null | undefined;
+/*type Values = string | number | bigint | boolean | RegExp | null | undefined;
 
 export type StateShape = {
   [key: string]: {
@@ -14,7 +16,7 @@ export type StateShape = {
     ast: estree.Node;
     type: "string" | "number" | "array" | "object";
   };
-};
+};*/
 
 const getDeclarationNames = (
   declarations: (estree.VariableDeclarator | estree.Pattern | null)[]
@@ -59,7 +61,169 @@ const getDeclarationNames = (
   return names;
 };
 
-export const parseState = (ast: estree.Node) => {
+export type ContextDescriptor = {
+  state: {
+    [key: string]: Record<never, never>;
+  };
+  defs: {
+    [key: string]: Record<never, never>;
+  };
+};
+
+export const extractContext = (ast: estree.Node) => {
+  const context: ContextDescriptor = {
+    state: {},
+    defs: {},
+  };
+
+  walkJs(ast, {
+    enter(_node, _parent) {
+      const parent = _parent as estree.Node;
+      const node = _node as estree.Node;
+
+      if (node.type === "FunctionDeclaration" && parent.type === "Program") {
+        const name = node.id?.name;
+        if (name) {
+          context.defs[name] = {};
+        }
+      } else if (node.type === "VariableDeclaration") {
+        const declarationNames = getDeclarationNames(node.declarations);
+        declarationNames.forEach((name) => {
+          context[node.kind === "let" ? "state" : "defs"][name] = {};
+        });
+
+        if (node.kind === "let") {
+          const assignments: estree.AssignmentExpression[] = [];
+          node.declarations.forEach((declaration) => {
+            if (declaration.init && declaration.id.type === "Identifier") {
+              assignments.push({
+                type: "AssignmentExpression",
+                operator: "=",
+                left: new Builder()
+                  .this()
+                  .get(generate.id("state"))
+                  .get(declaration.id)
+                  .build(),
+                right: {
+                  type: "ConditionalExpression",
+                  test: {
+                    type: "BinaryExpression",
+                    left: generate.str(declaration.id.name),
+                    operator: "in",
+                    right: new Builder()
+                      .this()
+                      .get(generate.id("state"))
+                      .build(),
+                  },
+                  consequent: new Builder()
+                    .this()
+                    .get(generate.id("state"))
+                    .get(declaration.id)
+                    .build(),
+                  alternate: declaration.init,
+                },
+              });
+            } else {
+              throw new Error("Unable to handle state");
+            }
+          });
+
+          const expression:
+            | estree.SequenceExpression
+            | estree.ExpressionStatement =
+            assignments.length > 1
+              ? {
+                  type: "SequenceExpression",
+                  expressions: assignments,
+                }
+              : {
+                  type: "ExpressionStatement",
+                  expression: assignments[0],
+                };
+          this.replace(expression);
+        }
+      }
+    },
+  });
+
+  return context;
+};
+
+export const addStateMarkup = (
+  ast: Node[],
+  directives: Directive[],
+  context: ContextDescriptor
+) => {
+  const bindDirectives = directives.filter(
+    (d) => d.type === "bind" && d.attributeName === "value"
+  ) as AttributeBind[];
+  const boundState = bindDirectives.map((d) => d.bindTo.name);
+  const stateToAdd = Object.keys(context.state).filter(
+    (name) => boundState.indexOf(name) === -1
+  );
+
+  walkHtml(ast, function (node) {
+    if (node.type === "HtmlTag" && node.tag === "form") {
+      const methodAttr = node.attributes.find((a) => a.name === "method");
+      if (!methodAttr) {
+        node.attributes.push({ name: "method", body: "post" });
+        stateToAdd.forEach((stateName) => {
+          node.children.push({
+            type: "HtmlTag",
+            tag: "input",
+            attributes: [
+              {
+                name: "type",
+                body: "hidden",
+              },
+              {
+                name: "name",
+                body: stateName,
+              },
+              {
+                name: "value",
+                body: {
+                  type: "Expression",
+                  expression: new Builder()
+                    .id("toFormValue")
+                    .call(generate.id(stateName))
+                    .build(),
+                },
+              },
+            ],
+            directives: [],
+            children: [],
+          });
+        });
+        this.skip();
+      }
+    }
+  });
+};
+
+export const rewriteState = <T extends estree.Node>(
+  ast: T,
+  context: ContextDescriptor
+): T => {
+  const stateNames = Object.keys(context.state);
+
+  return replaceIdentifiers(
+    ast,
+    [...Object.keys(context.defs), ...stateNames],
+    (node) =>
+      new Builder()
+        .this()
+        .get(
+          generate.id(
+            stateNames.indexOf(node.name) !== -1 ? "state" : "context"
+          )
+        )
+        .get(node)
+        .build()
+  );
+};
+
+/*export const parseState = (ast: estree.Node) => {
   const state: StateShape = {};
   const context: string[] = [];
 
@@ -81,10 +245,7 @@ export const parseState = (ast: estree.Node) => {
       // TODO: Add more
 
       // Check state
-      if (
-        node.type === "VariableDeclaration" &&
-        node.kind === "let"
-      ) {
+      if (node.type === "VariableDeclaration" && node.kind === "let") {
         node.declarations.forEach((declaration) => {
           if (declaration.id.type !== "Identifier") {
             console.error(
@@ -155,7 +316,8 @@ export const rewriteState = (
 
       if (
         node.type === "Identifier" &&
-        (stateNames.indexOf(node.name) !== -1 || context.indexOf(node.name) !== -1)
+        (stateNames.indexOf(node.name) !== -1 ||
+          context.indexOf(node.name) !== -1)
       ) {
         this.skip();
 
@@ -179,22 +341,17 @@ export const rewriteState = (
           },
           computed: false,
           optional: false,
-        }
+        };
         this.replace(memberExpression);
       }
     },
   }) as estree.Expression;
 };
 
-export const updateFormState = (
-  ast: Node[],
-  stateShape: StateShape
-) => {
+export const updateFormState = (ast: Node[], stateShape: StateShape) => {
   walkHtml(ast, function (node) {
     if (node.type === "HtmlTag" && node.tag === "form") {
-      const methodAttr = node.attributes.find(
-        (a) => a.name === "method"
-      );
+      const methodAttr = node.attributes.find((a) => a.name === "method");
       if (!methodAttr) {
         node.attributes.push({ name: "method", body: "post" });
         Object.keys(stateShape).forEach((stateName) => {
@@ -214,7 +371,10 @@ export const updateFormState = (
                 name: "value",
                 body: {
                   type: "Expression",
-                  expression: generate.id(stateName),
+                  expression: new Builder()
+                    .id("toFormValue")
+                    .call(generate.id(stateName))
+                    .build(),
                 },
               },
             ],
@@ -226,4 +386,4 @@ export const updateFormState = (
       }
     }
   });
-};
+};*/

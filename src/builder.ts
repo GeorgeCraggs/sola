@@ -2,62 +2,45 @@ import { acorn } from "./acorn.ts";
 import { estree, generate as b } from "./ast/estree.ts";
 import { walk } from "https://esm.sh/estree-walker";
 import { generate } from "https://deno.land/x/astring/src/astring.js";
-import { rewriteState, StateShape } from "./state.ts";
+import { rewriteState, ContextDescriptor } from "./state.ts";
 import { ExpressionNode } from "./ast/sfc.ts";
+import { Directive, AttributeBind, Event } from "./parseDirectives.ts";
 
 // TODO: Make POST check only generate if there is state
 // TODO: Escape styles
 const build = (
   template: estree.Expression,
   script: estree.Node,
-  stateShape: StateShape,
-  context: string[],
-  directives: {
-    [key: string]: {
-      id: string;
-      type: "on" | "bind" | "class";
-      name: string;
-      modifier: string;
-      value: string | ExpressionNode;
-    };
-  },
+  context: ContextDescriptor,
+  directives: Directive[],
   styles: string
 ): string => {
+  const binds: AttributeBind[] = directives.filter(
+    (d) => d.type === "bind"
+  ) as AttributeBind[];
+  const events = directives.filter((d) => d.type === "event") as Event[];
+
   const outputTemplate = `
-import { escapeHtml, parseFormValue } from "../../src/framework/mod.ts";
+import { toHtmlText, toFormValue, fromFormValue, escapeHtml } from "../../src/framework/mod.ts";
 
-const _template = function () {
-  return (\`TEMPLATE\`);
-};
+const _runner = async function () {
+  \`CODE\`;
 
-const _runner = function (_action) {
-  const extra = (function () {
-    \`CODE\`
-
-    return \`CONTEXTS\`;
-  }).call(this);
-
-  const _context = {...this, context: extra};
-
-  if (_action) {
-    let _result = _action;
-    while (_result instanceof Function) {
-      _result = _result.call(_context);
-    }
-  }
-
-  return _template.call(_context);
+  return {
+    render: function () { return (\`TEMPLATE\`) },
+    context: (\`CONTEXTS\`),
+  };
 };
 
 export const Component = async function (req) {
   const clickHandlers = \`CLICK_HANDLERS\`;
   const binds = \`BINDS\`;
-  const stateTypes = \`STATE_TYPES\`;
-  const state = \`STATE\`;
+  const state = {};
 
-  let action;
+  let result = {};
 
   if (req.method === "POST") {
+    let action;
     const formData = await req.formData();
 
     const actionName = formData.get("submit");
@@ -68,21 +51,22 @@ export const Component = async function (req) {
     formData.forEach((value, name) => {
       if (name === "submit") return;
 
-      if (name in state) {
-        state[name] = parseFormValue(value.toString(), stateTypes[name]);
-      }
-    });
-
-    formData.forEach((value, name) => {
-      if (name === "submit") return;
-
       if (name in binds) {
-        state[binds[name]] = parseFormValue(value.toString(), stateTypes[binds[name]]);
+        state[binds[name].toState] = binds[name].parseAsInput
+          ? value.toString()
+          : fromFormValue(value.toString());
       }
     });
+
+    while (typeof action === "function") {
+      result = await _runner.call({state});
+      action = action.call({state, context: result.context});
+    }
   }
 
-  return _runner.call({state}, action);
+  result = await _runner.call({state});
+
+  return result.render.call({state, context: result.context});
 };
 
 export const Styles = \`${styles}\`;
@@ -109,61 +93,92 @@ export const Styles = \`${styles}\`;
         } else if (elementValue === "CLICK_HANDLERS") {
           const expression: estree.ObjectExpression = {
             type: "ObjectExpression",
-            properties: Object.values(directives)
-              .filter(({ type, name }) => type === "on" && name === "click")
-              .map(({ id, value }) => ({
-                type: "Property",
-                method: false,
-                shorthand: false,
-                computed: false,
-                key: b.str(id),
-                kind: "init",
-                value: b.fn(
-                  [],
-                  b.block([
-                    b.return(
-                      rewriteState(
-                        typeof value === "string"
-                          ? (acorn.parseExpressionAt(value, 0, {
-                              ecmaVersion: 2022,
-                            }) as estree.Expression)
-                          : value.expression,
-                        stateShape,
-                        context
-                      ) as estree.Expression
-                    ),
-                  ])
-                ),
-              })),
+            properties: events.map((event) => ({
+              type: "Property",
+              method: false,
+              shorthand: false,
+              computed: false,
+              key: b.str(event.key),
+              kind: "init",
+              value: b.fn(
+                [],
+                b.block([b.return(rewriteState(event.expression, context))])
+              ),
+            })),
           };
 
           this.replace(expression);
         } else if (elementValue === "BINDS") {
+          const bindNames = binds.map((b) => b.bindTo.name);
+          const bindsProps: estree.Property[] = binds.map((bind) => {
+            return {
+              type: "Property",
+              method: false,
+              shorthand: false,
+              computed: false,
+              key: b.str(bind.key),
+              value: {
+                type: "ObjectExpression",
+                properties: [
+                  {
+                    type: "Property",
+                    method: false,
+                    shorthand: false,
+                    computed: false,
+                    key: b.str("toState"),
+                    value: b.str(bind.bindTo.name),
+                    kind: "init",
+                  },
+                  {
+                    type: "Property",
+                    method: false,
+                    shorthand: false,
+                    computed: false,
+                    key: b.str("parseAsInput"),
+                    value: b.bool(true),
+                    kind: "init",
+                  },
+                ],
+              },
+              kind: "init",
+            };
+          });
+          const stateProps: estree.Property[] = Object.keys(context.state)
+            .filter((n) => bindNames.indexOf(n) === -1)
+            .map((name) => ({
+              type: "Property",
+              method: false,
+              shorthand: false,
+              computed: false,
+              key: b.str(name),
+              value: {
+                type: "ObjectExpression",
+                properties: [
+                  {
+                    type: "Property",
+                    method: false,
+                    shorthand: false,
+                    computed: false,
+                    key: b.str("toState"),
+                    value: b.str(name),
+                    kind: "init",
+                  },
+                  {
+                    type: "Property",
+                    method: false,
+                    shorthand: false,
+                    computed: false,
+                    key: b.str("parseAsInput"),
+                    value: b.bool(false),
+                    kind: "init",
+                  },
+                ],
+              },
+              kind: "init",
+            }));
           const expression: estree.ObjectExpression = {
             type: "ObjectExpression",
-            properties: Object.values(directives)
-              .filter(({ type, name }) => type === "bind" && name === "value")
-              .map(({ id, value }) => {
-                const expression =
-                  typeof value === "string" ? b.str(value) : value.expression;
-                if (expression.type !== "Identifier") {
-                  throw new Error(`Must be Identifier (found ${expression.type})`);
-                }
-
-                return {
-                  type: "Property",
-                  method: false,
-                  shorthand: false,
-                  computed: false,
-                  key: {
-                    type: "Literal",
-                    value: id,
-                    raw: `"${id}"`,
-                  },
-                  value: b.str(expression.name),
-                  kind: "init",
-                };
-              }),
+            properties: [...bindsProps, ...stateProps],
           };
           this.replace(expression);
         } else if (elementValue === "CODE") {
@@ -171,7 +186,7 @@ export const Styles = \`${styles}\`;
         } else if (elementValue === "CONTEXTS") {
           const expression: estree.ObjectExpression = {
             type: "ObjectExpression",
-            properties: context.map((identifier) => ({
+            properties: Object.keys(context.defs).map((identifier) => ({
               type: "Property",
               method: false,
               shorthand: true,
@@ -185,34 +200,6 @@ export const Styles = \`${styles}\`;
                 type: "Identifier",
                 name: identifier,
               },
-            })),
-          };
-          this.replace(expression);
-        } else if (elementValue === "STATE") {
-          const expression: estree.ObjectExpression = {
-            type: "ObjectExpression",
-            properties: Object.entries(stateShape).map(([name, { ast }]) => ({
-              type: "Property",
-              method: false,
-              shorthand: false,
-              computed: false,
-              key: b.str(name),
-              value: ast as estree.Expression,
-              kind: "init",
-            })),
-          };
-          this.replace(expression);
-        } else if (elementValue === "STATE_TYPES") {
-          const expression: estree.ObjectExpression = {
-            type: "ObjectExpression",
-            properties: Object.entries(stateShape).map(([name, { type }]) => ({
-              type: "Property",
-              method: false,
-              shorthand: false,
-              computed: false,
-              key: b.str(name),
-              value: b.str(type),
-              kind: "init",
             })),
           };
           this.replace(expression);

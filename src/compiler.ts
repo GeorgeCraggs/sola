@@ -1,6 +1,9 @@
 import { Md5 } from "https://deno.land/std@0.119.0/hash/md5.ts";
-import { parseState, updateFormState, rewriteState } from "./state.ts";
-import parseDirectives from "./parseDirectives.ts";
+//import { parseState, updateFormState, rewriteState } from "./state.ts";
+import { extractContext, addStateMarkup } from "./state.ts";
+import { rewriteState } from "./state.ts";
+import { Builder, generate } from "./ast/estree.ts";
+import processDirectives from "./parseDirectives.ts";
 import build from "./builder.ts";
 import parse from "./parse/mod.ts";
 import compileTemplate from "./compile/mod.ts";
@@ -12,7 +15,10 @@ export default async function compileBackend(filePath: string) {
 
   const uuid = new Md5().update(outputFile).toString().substring(0, 11);
 
-  const { template, scripts, styles } = parse(filePath, await Deno.readTextFile(filePath));
+  const { markup, scripts, styles } = parse(
+    filePath,
+    await Deno.readTextFile(filePath)
+  );
 
   if (scripts.length > 1) {
     throw new Error(`${filePath}: Too many script tags`);
@@ -20,15 +26,35 @@ export default async function compileBackend(filePath: string) {
 
   let script = scripts[0];
 
-  const { state, context } = parseState(script);
-  script = rewriteState(script, state, []);
-
-  updateFormState(template, state);
-
-  const directives = parseDirectives(uuid, template);
+  const scriptContext = extractContext(script);
+  script = rewriteState(script, { state: scriptContext.state, defs: {} });
+  const directives = processDirectives(markup, uuid);
+  directives.forEach((d) => {
+    if (d.type === "event") {
+      d.expression = rewriteState(d.expression, scriptContext);
+    }
+  });
+  addStateMarkup(markup, directives, scriptContext);
 
   const outputText = build(
-    compileTemplate(template, state, context),
+    compileTemplate(markup, scriptContext),
+    script,
+    scriptContext,
+    directives,
+    styles.join("\n")
+  );
+
+  await Deno.writeTextFile(outputFile, outputText);
+
+  /*const { state, context } = parseState(script);
+  script = rewriteState(script, state, []);
+
+  updateFormState(markup, state);
+
+  const directives = parseDirectives(uuid, markup);
+
+  const outputText = build(
+    compileTemplate(markup, state, context),
     script,
     state,
     context,
@@ -36,5 +62,5 @@ export default async function compileBackend(filePath: string) {
     styles.join("\n")
   );
 
-  await Deno.writeTextFile(outputFile, outputText);
+  await Deno.writeTextFile(outputFile, outputText);*/
 }

@@ -61,7 +61,6 @@ export const parseTemplate = (fileIdentifier: string, template: string) => {
   }
 };
 
-
 export default (fileIdentifier: string, fileContent: string) => {
   const ast = parseTemplate(fileIdentifier, fileContent);
 
@@ -71,10 +70,10 @@ export default (fileIdentifier: string, fileContent: string) => {
   walk(ast, function (node) {
     if (node.type === "HtmlTag" && node.tag === "script") {
       scripts.push(
-        acorn.parse(
-          (node.children[0] as TextNode).text,
-          { ecmaVersion: 2022 }
-        ) as estree.Node
+        acorn.parse((node.children[0] as TextNode).text, {
+          ecmaVersion: 2022,
+          allowAwaitOutsideFunction: true,
+        }) as estree.Node
       );
       this.replace(null);
     }
@@ -87,5 +86,5 @@ export default (fileIdentifier: string, fileContent: string) => {
     return true;
   });
 
-  return { template: ast, scripts, styles };
+  return { markup: ast, scripts, styles };
 };

@@ -1,14 +1,12 @@
-import { StateShape } from "../state.ts";
 import { Node, HtmlTagNode } from "../ast/sfc.ts";
 import { estree, Builder, generate } from "../ast/estree.ts";
-import { rewriteState } from "../state.ts";
+import { rewriteState, ContextDescriptor } from "../state.ts";
 
 const compileHtmlTag = (
   node: HtmlTagNode,
   addExpression: (expression: estree.Expression) => void,
   addQuasis: (text: string) => void,
-  stateShape: StateShape,
-  context: string[]
+  context: ContextDescriptor
 ) => {
   addQuasis("<" + node.tag);
 
@@ -20,7 +18,7 @@ const compileHtmlTag = (
       addExpression(
         new Builder()
           .id("escapeHtml")
-          .call(rewriteState(attribute.body.expression, stateShape, context))
+          .call(rewriteState(attribute.body.expression, context))
           .build() as estree.Expression
       );
     }
@@ -52,15 +50,14 @@ const compileHtmlTag = (
 
   addQuasis(">");
   if (node.children.length > 0) {
-    addExpression(convertToAst(node.children, stateShape, context));
+    addExpression(convertToAst(node.children, context));
   }
   addQuasis(`</${node.tag}>`);
 };
 
 const convertToAst = (
   tree: Node[],
-  stateShape: StateShape,
-  context: string[]
+  context: ContextDescriptor
 ): estree.Expression => {
   const expressions: estree.Expression[] = [];
   const quasis: estree.TemplateElement[] = [
@@ -94,37 +91,39 @@ const convertToAst = (
     }
 
     if (node.type === "HtmlTag") {
-      compileHtmlTag(node, addExpression, addQuasis, stateShape, context);
+      compileHtmlTag(node, addExpression, addQuasis, context);
     }
 
     if (node.type === "Expression") {
-      addExpression(
-        new Builder()
-          .id("escapeHtml")
-          .call(rewriteState(node.expression, stateShape, context))
-          .build() as estree.Expression
-      );
+      const rewritten = rewriteState(node.expression, context);
+      const newExpression =
+        node.expression.type === "CallExpression" &&
+        node.expression.callee.type === "Identifier" &&
+        ["toHtmlText", "toFormValue", "escapeHtml"].indexOf(
+          node.expression.callee.name
+        ) !== -1
+          ? rewritten
+          : (new Builder()
+              .id("toHtmlText")
+              .call(rewritten)
+              .build() as estree.Expression);
+      addExpression(newExpression);
     }
 
     if (node.type === "IfBlock") {
       addExpression({
         type: "ConditionalExpression",
-        test: rewriteState(node.conditionExpression, stateShape, context),
-        consequent: convertToAst(node.children, stateShape, context),
-        alternate: convertToAst(node.elseChildren, stateShape, context),
+        test: rewriteState(node.conditionExpression, context),
+        consequent: convertToAst(node.children, context),
+        alternate: convertToAst(node.elseChildren, context),
       });
     }
 
     if (node.type === "EachBlock") {
-      const eachExpression = new Builder(
-        rewriteState(node.iterator, stateShape, context)
-      )
+      const eachExpression = new Builder(rewriteState(node.iterator, context))
         .callMember(
           "map",
-          generate.arrow(
-            node.params,
-            convertToAst(node.children, stateShape, context)
-          )
+          generate.arrow(node.params, convertToAst(node.children, context))
         )
         .callMember("join", generate.str(""))
         .build() as estree.CallExpression;

@@ -4,6 +4,7 @@ import * as Error404 from "./build/Error404.js";
 import * as Counter from "./build/Counter.js";
 import * as Todo from "./build/Todo.js";
 import * as AdvancedTodo from "./build/AdvancedTodo.js";
+import * as ApiCards from "./build/ApiCards.js";
 
 console.log("http://localhost:8005/");
 
@@ -29,6 +30,10 @@ const routes: {
   {
     match: "/advanced-todo",
     component: AdvancedTodo,
+  },
+  {
+    match: "/api-cards",
+    component: ApiCards,
   },
 ];
 
@@ -58,7 +63,7 @@ serve(
     <title>My Test App</title>
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <style>
-    ${css}
+    ${css.trim()}
     </style>
   </head>
   <body class="p-4 grid gap-4 max-w-4xl m-auto">

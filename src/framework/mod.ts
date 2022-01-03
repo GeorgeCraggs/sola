@@ -48,11 +48,11 @@ export const parseFormValue = (
 };
 
 export const toFormValue = (value: unknown) => {
-  return JSON.stringify(value);
+  return btoa(JSON.stringify(value));
 };
 
 export const fromFormValue = (value: string) => {
-  return JSON.parse(value);
+  return JSON.parse(atob(value));
 };
 
 export const toHtmlText = (value: unknown) => {
@@ -64,5 +64,5 @@ export const toHtmlText = (value: unknown) => {
     return escapeHtml(value.toString());
   }
 
-  return escapeHtml(toFormValue(value));
+  return escapeHtml(JSON.stringify(value));
 };
