@@ -15,6 +15,10 @@
     todoInputName = "";
   }
 
+  const toggleComplete = (index) => {
+    todos[index].complete = !todos[index].complete;
+  }
+
   const tags = [...new Set(todos.map((t) => t.tags).flat(1))];
   const colourClasses = [
     ["bg-red-400", "hover:bg-red-500"],
@@ -30,12 +34,12 @@
       <input
         class="rounded border border-gray-800 px-3"
         type="text"
-        bind:value="todoInputName"
+        bind:value={todoInputName}
         placeholder="Enter a todo"
       />
       <button
         class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
-        on:click="addTodo"
+        on:click={addTodo}
       >
         Add
       </button>
@@ -65,15 +69,20 @@
   </div>
 
   <ol class="grid gap-4">
-    {#each todos as todo}
+    {#each todos as todo, i}
     <li class="flex gap-4 p-3 border rounded items-center">
       <button
-        class="border-2 border-gray-500 rounded w-5 h-5"
-        on:click="console.log('TODO: Directives in #each context')"
+        class="border-2 border-gray-500 text-gray-500 rounded w-5 h-5"
+        on:click={toggleComplete(i)}
       >
+        {#if todo.complete}
+        <svg width="20" height="20" class="w-fit h-fit" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 80.5L60 125.5L142.5 34" stroke="currentColor" stroke-width="20"/>
+        </svg>
+        {/if}
         <span class="sr-only">{todo.complete ? 'Complete' : 'Incomplete'}</span>
       </button>
-      {todo.name}
+      <p>{todo.name}</p>
       <ul class="ml-auto">
         {#each todo["tags"] as tag}
         <li class="py-1 px-2 bg-red-300 rounded">{tag}</li>
@@ -81,8 +90,7 @@
       </ul>
       {#if todo.assignee !== null}
         {todo.assignee}
-      {/if}
-      {#if todo.assignee === null}
+      {#else}
         <div class="flex gap-2 items-center">
           <div class="h-8 aspect rounded-full bg-gray-500">
 
@@ -98,5 +106,12 @@
 <style>
 .aspect {
   aspect-ratio: 1 / 1;
+}
+/* Needs tailwind 3 */
+.w-fit {
+  width: fit-content;
+}
+.h-fit {
+  height: fit-content;
 }
 </style>

@@ -1,8 +1,5 @@
 <script>
   let count = 0;
-  function test() {
-    count = 2;
-  }
 </script>
 
 <h1 class="text-2xl">Counter</h1>
@@ -14,18 +11,18 @@
   <div class="flex gap-2">
     <button
       class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
-      on:click="count = count + 1"
+      on:click={count = count + 1}
     >
       Increment
     </button>
     <button
       class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
-      on:click="count = count - 1"
+      on:click={count = count - 1}
     >Decrement</button>
     {#if count !== 0}
     <button
       class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
-      on:click="count = 0"
+      on:click={count = 0}
     >
       Reset
     </button>

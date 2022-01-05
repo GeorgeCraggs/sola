@@ -1,9 +1,10 @@
-import { serve } from "https://deno.land/std@0.116.0/http/server.ts";
-import * as Home from "./build/Home.js";
-import * as Error404 from "./build/Error404.js";
-import * as Counter from "./build/Counter.js";
-import * as Todo from "./build/Todo.js";
-import * as AdvancedTodo from "./build/AdvancedTodo.js";
+import { serve } from "https://deno.land/std@0.119.0/http/server.ts";
+import * as Home from "components/Home.sola.html";
+import * as Error404 from "components/Error404.sola.html";
+import * as Counter from "components/Counter.sola.html";
+import * as Todo from "components/Todo.sola.html";
+import * as AdvancedTodo from "components/AdvancedTodo.sola.html";
+import * as Contacts from "components/Contacts.sola.html";
 
 console.log("http://localhost:8005/");
 
@@ -29,6 +30,10 @@ const routes: {
   {
     match: "/advanced-todo",
     component: AdvancedTodo,
+  },
+  {
+    match: "/contacts",
+    component: Contacts,
   },
 ];
 
@@ -58,7 +63,7 @@ serve(
     <title>My Test App</title>
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <style>
-    ${css}
+    ${css.trim()}
     </style>
   </head>
   <body class="p-4 grid gap-4 max-w-4xl m-auto">
@@ -71,5 +76,5 @@ serve(
       }
     );
   },
-  { addr: ":8005" }
+  { port: 8005 }
 );

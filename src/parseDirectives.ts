@@ -1,87 +1,151 @@
-import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
-import * as treeAdapter from "https://cdn.skypack.dev/parse5-htmlparser2-tree-adapter?dts";
-import walk from "./walk.ts";
+import { Node, HtmlTagNode, ExpressionNode, EachBlockNode } from "./ast/sfc.ts";
+import { estree, Builder, generate } from "./ast/estree.ts";
+import walk from "./parse/walker.ts";
 
-const parseDirectives = (id: string, ast: parse5.Node) => {
-  const directives: {
-    [key: string]: {
-      id: string;
-      type: "on" | "bind" | "class";
-      name: string;
-      modifier: string;
-      value: string;
-    };
-  } = {};
+export type AttributeBind = {
+  type: "bind";
+  attributeName: string;
+  node: HtmlTagNode;
+  bindTo: estree.Identifier,
+  key: string;
+};
 
-  walk(ast, (node) => {
-    const eventAttributes = treeAdapter
-      .getAttrList(node)
-      .filter(({ name }) => /^[^:]+:/.test(name));
+export type Event = {
+  type: "event";
+  eventName: "click";
+  expression: estree.Expression,
+  loopContexts: {
+    param: estree.Identifier,
+    vars: estree.Pattern,
+    iterator: estree.Expression,
+    eachBlock: EachBlockNode,
+  }[],
+  node: HtmlTagNode;
+  key: string;
+};
 
-    eventAttributes.forEach(({ name, value }) => {
-      const key = id + Object.keys(directives).length;
+export type Directive = AttributeBind | Event;
 
-      const matches = name.match(/^([^:]+):([^\.]+).?(.*)/);
-      const directiveType = matches?.at(1);
-      const directiveName = matches?.at(2);
-      const directiveModifier = matches?.at(3);
+const processDirectives = (markup: Node[], componentId: string): Directive[] => {
+  const directives: Directive[] = [];
 
-      if (
-        directiveType !== "on" &&
-        directiveType !== "bind" &&
-        directiveType !== "class"
-      ) {
-        throw new Error(`Invalid directive "${directiveType}"`);
-      }
+  walk(markup, (node, parents) => {
+    if (node.type !== "HtmlTag") return;
 
-      directives[key] = {
-        id: key,
-        type: directiveType,
-        name: directiveName || "",
-        modifier: directiveModifier || "",
-        value,
-      };
+    node.directives.forEach(
+      ({ type: directiveType, property, modifier, body }) => {
+        const key = componentId + Object.keys(directives).length;
 
-      if (
-        directiveType === "on" &&
-        directiveName === "click" &&
-        treeAdapter.getTagName(node) === "button"
-      ) {
-        treeAdapter.adoptAttributes(node, [
-          {
-            name: "type",
-            value: "submit",
-          },
-          {
-            name: "name",
-            value: "submit",
-          },
-          {
-            name: "value",
-            value: key,
-          },
-        ]);
-      } else if (directiveType === "bind" && directiveName) {
-        if (directiveName === "value") {
-          treeAdapter.adoptAttributes(node, [
+        if (directiveType === "on" && property === "click") {
+          if (node.tag !== "button") {
+            throw new Error(`on:click must be on button tag`);
+          }
+
+          if (modifier) {
+            throw new Error(`Unknown modifier ${modifier}`);
+          }
+
+          if (typeof body === "string") {
+            throw new Error(`on:click must not be string`);
+          }
+
+          const loopParents = parents.filter(p => p.type === "EachBlock") as EachBlockNode[];
+          const clickLoopContexts = loopParents.map(p => {
+            if (p.params.length <= 1) {
+              p.params.push(generate.id("index"));
+            }
+            const indexParam = p.params[p.params.length - 1];
+            if (indexParam.type !== "Identifier") {
+              throw new Error("Index parameter for loop isn't Identifier");
+            }
+
+            return {
+              param: indexParam,
+              vars: p.params[0],
+              iterator: p.iterator,
+              eachBlock: p,
+            };
+          });
+
+          directives.push({
+            type: "event",
+            eventName: property,
+            expression: body.expression,
+            loopContexts: clickLoopContexts,
+            key,
+            node,
+          });
+
+          const valueObj: ExpressionNode = {
+            type: "Expression",
+            expression: new Builder().id("JSON").callMember("stringify",
+              new Builder().obj().defineProp("h", generate.str(key)).defineProp("i", generate.array(clickLoopContexts.map(a => a.param))).build()
+            ).build(),
+          };
+
+          node.attributes.push(
+            {
+              name: "type",
+              body: "submit",
+            },
             {
               name: "name",
-              value: key,
+              body: "submit",
             },
-          ]);
+            {
+              name: "value",
+              body: valueObj,
+            },
+          );
+
+          return;
         }
 
-        treeAdapter.adoptAttributes(node, [
-          {
-            name: directiveName,
-            value: `{${value}}`,
-          },
-        ]);
+        if (directiveType === "bind" && property === "value") {
+          if (node.tag !== "input") {
+            throw new Error(`bind must be on an input`);
+          }
+
+          if (modifier) {
+            throw new Error(`Unknown modifier ${modifier}`);
+          }
+
+          if (typeof body === "string") {
+            throw new Error(`bind directive must not be string`);
+          }
+
+          if (body.expression.type !== "Identifier") {
+            throw new Error(`bind directive must be identifier`);
+          }
+
+          directives.push({
+            type: "bind",
+            attributeName: property,
+            bindTo: body.expression,
+            key,
+            node,
+          });
+
+          node.attributes.push(
+            {
+              name: "name",
+              body: key,
+            },
+            {
+              name: "value",
+              body,
+            }
+          );
+
+          return;
+        }
+
+        throw new Error(`Directive not supported ${directiveType}:${property}`);
       }
-    });
+    );
   });
 
   return directives;
 };
 
-export default parseDirectives;
+export default processDirectives;

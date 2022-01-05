@@ -1,43 +1,45 @@
-import { Md5 } from "https://deno.land/std@0.116.0/hash/md5.ts";
-import parseSfc from "./parseSfc.ts";
-import { parseState, updateFormState, rewriteState } from "./state.ts";
-import parseDirectives from "./parseDirectives.ts";
+import { ensureDir } from "https://deno.land/std@0.119.0/fs/mod.ts"
+import { dirname } from "https://deno.land/std@0.119.0/path/mod.ts"
+import { Md5 } from "https://deno.land/std@0.119.0/hash/md5.ts";
+import { extractContext, addStateMarkup } from "./state.ts";
+import { rewriteState } from "./state.ts";
+import processDirectives from "./parseDirectives.ts";
 import build from "./builder.ts";
-import compileTemplate from "./templateCompiler/mod.ts";
-import * as parse5 from "https://cdn.skypack.dev/parse5?dts";
-import * as treeAdapter from "https://cdn.skypack.dev/parse5-htmlparser2-tree-adapter?dts";
+import parse from "./parse/mod.ts";
+import compileTemplate from "./compile/mod.ts";
 
-export default async function compileBackend(filePath: string) {
-  const outputFile = filePath
-    .replace(/\/components\//, "/build/")
-    .replace(/\.sola\.html/, ".js");
+export default async function compileServerSide(inputFile: string, outputFile: string) {
+  const uuid = new Md5().update(outputFile).toString().substring(0, 11);
 
-  const uuid = new Md5().update(outputFile).toString();
-
-  const { template, scripts, styles } = await parseSfc(filePath);
+  const { markup, scripts, styles } = parse(
+    inputFile,
+    await Deno.readTextFile(inputFile)
+  );
 
   if (scripts.length > 1) {
-    throw new Error(`${filePath}: Too many script tags`);
+    throw new Error(`${inputFile}: Too many script tags`);
   }
 
   let script = scripts[0];
 
-  const { state, context } = parseState(script);
-  /** @ts-ignore */
-  script = rewriteState(script, state, []);
-
-  updateFormState(template, state);
-
-  const directives = parseDirectives(uuid, template);
+  const scriptContext = extractContext(script);
+  script = rewriteState(script, { state: scriptContext.state, defs: {} });
+  const directives = processDirectives(markup, uuid);
+  directives.forEach((d) => {
+    if (d.type === "event") {
+      d.expression = rewriteState(d.expression, scriptContext);
+    }
+  });
+  addStateMarkup(markup, directives, scriptContext);
 
   const outputText = build(
-    compileTemplate(parse5.serialize(template, { treeAdapter }), state, context),
+    compileTemplate(markup, scriptContext),
     script,
-    state,
-    context,
+    scriptContext,
     directives,
     styles.join("\n")
   );
 
+  await ensureDir(dirname(outputFile));
   await Deno.writeTextFile(outputFile, outputText);
 }

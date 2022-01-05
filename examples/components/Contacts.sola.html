@@ -1,0 +1,60 @@
+<script>
+  /*let response = await fetch(
+    "https://random-data-api.com/api/users/random_user?size=2"
+  );
+  const users = await response.json();*/
+  let search = "";
+  let users = await (
+    await fetch("https://random-data-api.com/api/users/random_user?size=20")
+  ).json();
+
+  const filteredUsers = users.filter(
+    (u) => search === "" || u.first_name.toLowerCase().includes(search) ||
+    u.last_name.toLowerCase().includes(search) || u.phone_number.toLowerCase().includes(search)
+  );
+
+  function onSearch() {
+    search = search.toLowerCase();
+  }
+</script>
+
+<form class="grid gap-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl">Contacts</h1>
+    <div class="flex gap-2">
+      <input
+        class="rounded border border-gray-800 px-3"
+        type="search"
+        bind:value={search}
+        placeholder="Search"
+      />
+      <button
+        class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
+        on:click={onSearch}
+      >
+        Search
+      </button>
+    </div>
+  </div>
+
+  <ul class="grid grid-cols-2 gap-3">
+    {#each filteredUsers as user}
+    <li class="p-4 border rounded flex flex-col gap-2">
+      <div class="flex items-center gap-3">
+        <h2 class="text-xl order-last">{user.first_name} {user.last_name}</h2>
+        <img src={user.avatar} class="rounded-full h-8" />
+      </div>
+      <p>{user.email}</p>
+      <p>{user.gender}</p>
+      <p>{user.phone_number}</p>
+      <p>{user.date_of_birth}</p>
+      <button
+        class="rounded bg-gray-800 hover:bg-gray-700 text-white px-4 py-2"
+        on:click={console.log(user)}
+      >
+        Print to log
+      </button>
+    </li>
+    {/each}
+  </ul>
+</form>

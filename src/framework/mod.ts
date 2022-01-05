@@ -46,3 +46,23 @@ export const parseFormValue = (
 
   return handlers[type](value);
 };
+
+export const toFormValue = (value: unknown) => {
+  return btoa(JSON.stringify(value));
+};
+
+export const fromFormValue = (value: string) => {
+  return JSON.parse(atob(value));
+};
+
+export const toHtmlText = (value: unknown) => {
+  if (typeof value === "string") {
+    return escapeHtml(value);
+  }
+
+  if (typeof value === "number") {
+    return escapeHtml(value.toString());
+  }
+
+  return escapeHtml(JSON.stringify(value));
+};
