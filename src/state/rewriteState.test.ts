@@ -2,7 +2,7 @@ import { assertEquals } from "https://deno.land/std@0.119.0/testing/asserts.ts";
 import rewriteState from "./rewriteState.ts";
 import { acorn } from "../acorn.ts";
 import { estree } from "../ast/estree.ts";
-import { generate } from "https://deno.land/x/astring/src/astring.js";
+import { generate } from "https://deno.land/x/astring@v1.8.1/src/astring.js";
 
 Deno.test({
   name: "substitutes before and after declaration",

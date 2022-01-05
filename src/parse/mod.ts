@@ -73,6 +73,7 @@ export default (fileIdentifier: string, fileContent: string) => {
         acorn.parse((node.children[0] as TextNode).text, {
           ecmaVersion: 2022,
           allowAwaitOutsideFunction: true,
+          sourceType: "module",
         }) as estree.Node
       );
       this.replace(null);

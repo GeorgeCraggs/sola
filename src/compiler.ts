@@ -1,3 +1,5 @@
+import { ensureDir } from "https://deno.land/std@0.119.0/fs/mod.ts"
+import { dirname } from "https://deno.land/std@0.119.0/path/mod.ts"
 import { Md5 } from "https://deno.land/std@0.119.0/hash/md5.ts";
 import { extractContext, addStateMarkup } from "./state.ts";
 import { rewriteState } from "./state.ts";
@@ -6,20 +8,16 @@ import build from "./builder.ts";
 import parse from "./parse/mod.ts";
 import compileTemplate from "./compile/mod.ts";
 
-export default async function compileBackend(filePath: string) {
-  const outputFile = filePath
-    .replace(/\/components\//, "/build/")
-    .replace(/\.sola\.html/, ".js");
-
+export default async function compileServerSide(inputFile: string, outputFile: string) {
   const uuid = new Md5().update(outputFile).toString().substring(0, 11);
 
   const { markup, scripts, styles } = parse(
-    filePath,
-    await Deno.readTextFile(filePath)
+    inputFile,
+    await Deno.readTextFile(inputFile)
   );
 
   if (scripts.length > 1) {
-    throw new Error(`${filePath}: Too many script tags`);
+    throw new Error(`${inputFile}: Too many script tags`);
   }
 
   let script = scripts[0];
@@ -42,5 +40,6 @@ export default async function compileBackend(filePath: string) {
     styles.join("\n")
   );
 
+  await ensureDir(dirname(outputFile));
   await Deno.writeTextFile(outputFile, outputText);
 }

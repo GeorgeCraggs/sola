@@ -124,7 +124,7 @@ export const extractContext = (ast: estree.Node) => {
                 },
               });
             } else {
-              throw new Error("Unable to handle state");
+              console.warn("Potentially invalid state");
             }
           });
 

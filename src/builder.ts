@@ -1,9 +1,8 @@
 import { acorn } from "./acorn.ts";
 import { estree, Builder, generate as b } from "./ast/estree.ts";
 import { walk } from "https://esm.sh/estree-walker";
-import { generate } from "https://deno.land/x/astring/src/astring.js";
+import { generate } from "https://deno.land/x/astring@v1.8.1/src/astring.js";
 import { rewriteState, ContextDescriptor } from "./state.ts";
-import { ExpressionNode } from "./ast/sfc.ts";
 import { Directive, AttributeBind, Event } from "./parseDirectives.ts";
 
 // TODO: Make POST check only generate if there is state
