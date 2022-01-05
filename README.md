@@ -23,7 +23,7 @@ any APIs may change frequently.
 
 ## Running Examples
 
-Head to the examples directory and run `./compile-and-run.sh`.
+Head to the examples directory and run `./cli.sh run` or `./cli.sh watch`
 
 ## Contributing
 
